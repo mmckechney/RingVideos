@@ -320,14 +320,12 @@ namespace RingVideos
         /// <returns></returns>
         public async Task<List<Ding>> GetDingsAsync(DateTime? startUtc, DateTime? endUtc, int maxVideoCount, bool onlyStarred)
         {
+            //set start date to the min date so we get the oldest possible 
             if(!startUtc.HasValue)
             {
                 startUtc = DateTime.MinValue;
             }
-            if(!endUtc.HasValue)
-            {
-                endUtc = DateTime.MaxValue;
-            }
+            
             var devices = await GetDevicesAsync();
             var dings = new List<Ding>();
             int loop = 0;
@@ -341,8 +339,6 @@ namespace RingVideos
                 {
                     data.Add("older_than", lastId.ToString());
                 }
-                
-                loop = 1;
                 var response = await SendRequestAsync(HttpMethod.Get, DingHistoryUri, data);
 
                 if (!response.IsSuccessStatusCode)
@@ -358,11 +354,13 @@ namespace RingVideos
                 }
                 try
                 {
+                    //Parse the batch of 100 videos into Ding objects
                     var jsonArray = JArray.Parse(await response.Content.ReadAsStringAsync());
                     if (jsonArray.Count == 0)
                     {
                         break;
                     }
+                    List<Ding> batch = new List<Ding>();
                     foreach (var token in jsonArray.Children())
                     {
                         DingType type;
@@ -386,46 +384,63 @@ namespace RingVideos
                                 break;
                         }
 
+                        var tmpDate = DateTime.Parse((string)token["created_at"], CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal);
+                        var tmpUtc = new DateTime(tmpDate.Ticks, DateTimeKind.Utc);
                         var tmp = new Ding()
                         {
                             Id = (ulong)token["id"],
-                            CreatedAt = DateTime.Parse((string)token["created_at"], CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal),
+                            CreatedAtUtc = tmpUtc,
                             Answered = (bool)token["answered"],
                             Favorite = (bool)token["favorite"],
                             RecordingIsReady = ((string)token["recording"]["status"] == "ready"),
                             Device = devices.Where(d => d.Id == (ulong)token["doorbot"]["id"]).FirstOrDefault(),
                             Type = type
                         };
-
+                        batch.Add(tmp);
                         lastId = tmp.Id;
-                        if (tmp.CreatedAt <= endUtc.Value && tmp.CreatedAt >= startUtc.Value)
+                    }
+                    //If no end date, set it to the oldest video, which will come in the first loop since they are retreived date desc
+                    if(loop == 0 && !endUtc.HasValue)
+                    {
+                        endUtc = batch.Select(d => d.CreatedAtUtc).Max();
+                    }
+                    loop = 1;
+                    //Because the videos are retrieved date descending, reverse it so that filters that just have a start date are properly retrieved
+                    var ordered = batch.OrderBy(d => d.CreatedAtUtc);
+                    foreach (var tmp in ordered)
+                    {
+                        log.LogTrace($"Retrieve Ding: {tmp.Id} '{tmp.CreatedAtUtc}'({tmp.CreatedAtLocal}) ");
+                        if (tmp.CreatedAtUtc <= endUtc.Value && tmp.CreatedAtUtc >= startUtc.Value)
                         {
+
                             if (onlyStarred)
                             {
-                                if(tmp.Favorite)
+                                if (tmp.Favorite)
                                 {
+                                    log.LogTrace("Added Starred Ding to collection");
                                     dings.Add(tmp);
                                 }
                             }
                             else
                             {
+                                log.LogTrace("Added Ding to collection");
                                 dings.Add(tmp);
                             }
                             log.LogDebug(dings.Count.ToString());
                         }
                         if (dings.Count >= maxVideoCount)
                         {
-
+                            log.LogTrace("Hit max count value!");
                             continueLoop = false;
                             break;
                         }
-                        //The ring API goes backawrd in time, so most recent to oldest. So, to break out of the loop, I need to see if I am past the end date
-                        if (tmp.CreatedAt < startUtc.Value)
+                        
+                        if (tmp.CreatedAtUtc >= endUtc.Value)
                         {
+                            log.LogTrace("Hit end DateTime value");
                             continueLoop = false;
                             break;
                         }
-
                     }
                 }catch(Exception exe)
                 {

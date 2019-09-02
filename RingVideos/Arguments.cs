@@ -163,6 +163,12 @@ namespace RingVideos
                     case "password":
                         f.Password = dict[key.ToString()];
                         break;
+                    case "debug:":
+                    case "d":
+                    case "trace":
+                    case "t":
+                        //can ignore, these are used in initial services configuration
+                        break;
                     default:
                         log.LogInformation($"Unrecognized argument: {key.ToString()}={dict[key.ToString()]}");
                         break;

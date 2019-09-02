@@ -34,8 +34,8 @@ namespace RingVideos
                // Start up logic here
                 app.Run(f).Wait();
             }
-            Console.WriteLine("Press any key to exit.");
-            Console.ReadLine();
+            //Console.WriteLine("Press any key to exit.");
+            //Console.ReadLine();
 
         }
 
@@ -72,6 +72,10 @@ namespace RingVideos
             if (args.Any(a => a.ToLower().EndsWith("-d") || a.ToLower().EndsWith("-debug")))
             {
                 services.AddLogging(configure => configure.AddConsole().SetMinimumLevel(LogLevel.Debug));
+            }
+            else if(args.Any(a => a.ToLower().EndsWith("-t") || a.ToLower().EndsWith("-trace")))
+            {
+                services.AddLogging(configure => configure.AddConsole().SetMinimumLevel(LogLevel.Trace));
             }
             else
             {
