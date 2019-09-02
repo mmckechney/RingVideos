@@ -24,7 +24,7 @@ steps:
     projects: '**/*.csproj'
     arguments: '--configuration Release' # Update this to match your need.
 
-- script: dotnet publish -c Release -r win10-x64'
+- script: dotnet publish -c Release -r win10-x64
 
 - task: DotNetCoreCLI@2
   displayName: publish exe
