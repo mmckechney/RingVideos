@@ -8,7 +8,7 @@ pool:
 steps:
 - task: DotNetCoreInstaller@0
   inputs:
-    version: '2.2.2'
+    version: '2.2.200'
 
 # do this before your build tasks
 - task: DotNetCoreCLI@2
