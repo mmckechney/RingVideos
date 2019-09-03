@@ -8,6 +8,7 @@ pool:
 variables:
   buildConfiguration: 'Release'
   dotnetSdkVersion: '2.2.200'
+  exeRuntime: 'win10-x64'
 
 steps:
 - task: DotNetCoreInstaller@0
@@ -28,24 +29,31 @@ steps:
     projects: '**/*.csproj'
     arguments: '--no-restore --configuration $(buildConfiguration)'
 
-- script: dotnet publish -c Release -r win10-x64
-
 - task: DotNetCoreCLI@2
   displayName: 'Publish the project - $(buildConfiguration)'
   inputs:
     command: 'publish'
     projects: '**/*.csproj'
     publishWebProjects: false
-    arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)'
+    arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)/dll'
     zipAfterPublish: true
 
 - task: DotNetCoreCLI@2
-  displayName: 'Publish the project as an EXE - $(buildConfiguration)'
+  displayName: 'Publish the project as a self contained EXE - $(buildConfiguration)'
   inputs:
     command: 'publish'
     projects: '**/*.csproj'
     publishWebProjects: false
-    arguments: '--no-build --configuration $(buildConfiguration) -r win10-x64 --self-contained true --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)/Exe'
+    arguments: '--no-build --configuration $(buildConfiguration) -r $(exeRuntime) --self-contained true --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)/Contained_Exe'
+    zipAfterPublish: true
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish the project as a framework dependent EXE - $(buildConfiguration)'
+  inputs:
+    command: 'publish'
+    projects: '**/*.csproj'
+    publishWebProjects: false
+    arguments: '--no-build --configuration $(buildConfiguration) -r $(exeRuntime) --self-contained false --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)/Dependent_Exe'
     zipAfterPublish: true
 
 - task: PublishBuildArtifacts@1
