@@ -12,25 +12,29 @@ steps:
 
 # do this before your build tasks
 - task: DotNetCoreCLI@2
-  displayName: restore packages
+  displayName: 'Restore project dependencies'
   inputs:
     command: restore
     projects: '**/*.csproj'
 
 - task: DotNetCoreCLI@2
-  displayName: Buid project
+  displayName: 'Build the project - $(buildConfiguration)'
   inputs:
     command: build
     projects: '**/*.csproj'
-    arguments: '--configuration Release' # Update this to match your need.
+    arguments: '--no-restore --configuration $(buildConfiguration)'
 
 - script: dotnet publish -c Release -r win10-x64
 
 - task: DotNetCoreCLI@2
-  displayName: publish exe
+  displayName: 'Publish the project - $(buildConfiguration)'
   inputs:
-    command: publish
-    publishWebProjects: False
-    arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory) -r win10-x64'
-    zipAfterPublish: True
+    command: 'publish'
+    projects: '**/*.csproj'
+    publishWebProjects: false
+    arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)'
+    zipAfterPublish: true
 
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact: drop'
+  condition: succeeded()
