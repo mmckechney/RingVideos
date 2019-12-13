@@ -6,7 +6,7 @@ pool:
 
 variables:
   buildConfiguration: 'Release'
-  dotnetSdkVersion: '3.x'
+  dotnetSdkVersion: '3.1.0'
   exeRuntime: 'win10-x64'
 
 steps:
