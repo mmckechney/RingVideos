@@ -99,11 +99,10 @@ namespace RingVideos
         }
 
 
-        internal Filter ParseCommandline(string[] args)
+        internal (Filter, Authentication) ParseCommandline(string[] args, Authentication a, Filter f)
         {
             var dict = ParseArguments(args);
-            Filter f = new Filter();
-
+ 
             foreach (var key in dict.Keys)
             {
                 switch (key.ToString().ToLower())
@@ -116,8 +115,10 @@ namespace RingVideos
                             f.StartDateTime = startTime;
                         }
                         else
-                        {
-                            throw new ArgumentException("Unable to set --start value. Please make sure it is in quotes and the format \"YYYY-MM-dd HH:mm\"");
+                        {   if (!f.StartDateTime.HasValue)
+                            {
+                                throw new ArgumentException("Unable to set --start value. Please make sure it is in quotes and the format \"YYYY-MM-dd HH:mm\"");
+                            }
                         }
                         break;
                     case "e":
@@ -129,7 +130,7 @@ namespace RingVideos
                         }
                         else
                         {
-                            throw new ArgumentException("Unable to set --end value. Please make sure it is in quotes and the format \"YYYY-MM-dd HH:mm\"");
+                            f.EndDateTime = DateTime.Today.AddDays(1).AddSeconds(-1);
                         }
                         break;
                     case "p":
@@ -158,10 +159,10 @@ namespace RingVideos
                         f.OnlyStarred = true;
                         break;
                     case "username":
-                        f.UserName = dict[key.ToString()];
+                        a.UserName = dict[key.ToString()];
                         break;
                     case "password":
-                        f.Password = dict[key.ToString()];
+                        a.ClearTextPassword = dict[key.ToString()];
                         break;
                     case "debug:":
                     case "d":
@@ -221,7 +222,7 @@ namespace RingVideos
             }
 
 
-            return f;
+            return (f, a);
 
         }
     }

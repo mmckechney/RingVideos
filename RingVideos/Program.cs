@@ -7,11 +7,21 @@ using System.Collections;
 using System.Net;
 using System.Threading.Tasks;
 using System.Linq;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.FileExtensions;
+using Microsoft.Extensions.Configuration.Json;
+using System.IO;
+using System.Text.Json;
+using System.Threading.Tasks.Sources;
+using System.Text;
+using System.Net.Security;
 
 namespace RingVideos
 {
     class Program
     {
+        public static IConfiguration Configuration { get; set; }
+   
 
         static void Main(string[] args)
         {
@@ -21,7 +31,11 @@ namespace RingVideos
             {
                 RingVideoApplication app = serviceProvider.GetService<RingVideoApplication>();
                 Arguments argument = serviceProvider.GetService<Arguments>();
-                Filter f = argument.ParseCommandline(args);
+                Authentication auth = Configuration.GetSection("Authentication").Get<Authentication>();
+                auth.Decrypt();
+                Filter filter = Configuration.GetSection("Filter").Get<Filter>();
+
+                (Filter f, Authentication a) = argument.ParseCommandline(args, auth, filter);
 
                 if (f.SetDebug)
                 {
@@ -29,36 +43,64 @@ namespace RingVideos
                     logConfig.SetMinimumLevel(LogLevel.Debug);
                 }
 
-                SetAuthenticationValues(f);
+                SetAuthenticationValues(a);
 
                // Start up logic here
-                app.Run(f).Wait();
-            }
-            //Console.WriteLine("Press any key to exit.");
-            //Console.ReadLine();
+                app.Run(f,a).Wait();
 
+                SaveSettings(f, a);
+            }
         }
 
-        private static void SetAuthenticationValues(Filter f)
+        private static void SaveSettings(Filter f, Authentication a)
         {
-            if(string.IsNullOrWhiteSpace(f.UserName))
+
+            a.Encrypt();
+            //Set "next dates" on filter
+            f.StartDateTime = f.EndDateTime.Value.AddDays(-1);
+            f.EndDateTime = null;
+
+            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"RingVideos");
+            if(!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+
+            string settingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"RingVideos\RingVideosConfig.json");
+            var serializeOptions = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+            var conf = new Config()
+            {
+                Authentication = a,
+                Filter = f
+            };
+            var config = JsonSerializer.Serialize(conf, serializeOptions);
+
+            File.WriteAllText(settingsFile, config);
+        }
+
+        private static void SetAuthenticationValues(Authentication a)
+        {
+            if(string.IsNullOrWhiteSpace(a.UserName))
             {
                 var un = System.Environment.GetEnvironmentVariable("RingUsername");
                 if(!string.IsNullOrWhiteSpace(un))
                 {
-                    f.UserName = un;
+                    a.UserName = un;
                 }
                 else
                 {
                     throw new ArgumentException("A Ring username is requires");
                 }
             }
-            if (string.IsNullOrWhiteSpace(f.Password))
+            if (string.IsNullOrWhiteSpace(a.ClearTextPassword))
             {
                 var pw = System.Environment.GetEnvironmentVariable("RingPassword");
                 if (!string.IsNullOrWhiteSpace(pw))
                 {
-                    f.Password = pw;
+                    a.ClearTextPassword = pw;
                 }
                 else
                 {
@@ -82,6 +124,12 @@ namespace RingVideos
                 services.AddLogging(configure => configure.AddConsole().SetMinimumLevel(LogLevel.Information));
             }
 
+            Configuration = new ConfigurationBuilder()
+                .AddJsonFile(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"RingVideos\RingVideosConfig.json"), optional: true, reloadOnChange: true)
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .Build();
+
+     
             services.AddTransient<RingVideoApplication>()
             .AddTransient<RingClient>()
             .AddTransient<Arguments>();

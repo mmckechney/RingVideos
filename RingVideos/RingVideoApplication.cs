@@ -27,9 +27,9 @@ namespace RingVideos
         }
 
 
-        internal async Task<int> Run(Filter filter)
+        internal async Task<int> Run(Filter filter, Authentication auth)
         {
-            this.client.Initialize(filter.UserName, filter.Password).Wait();
+            this.client.Initialize(auth.UserName, auth.ClearTextPassword).Wait();
             if (!string.IsNullOrWhiteSpace(filter.DownloadPath))
             {
                 if (!Directory.Exists(filter.DownloadPath))
