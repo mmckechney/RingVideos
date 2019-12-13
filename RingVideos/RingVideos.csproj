@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <Authors>MIchael McKechney</Authors>
     <Company>blueskydev.us</Company>
     <Description>Bulk downloader for Ring.com videos.</Description>
