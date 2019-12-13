@@ -27,14 +27,15 @@ namespace RingVideos
         }
 
 
-        internal async Task<int> Run(Filter filter)
+        internal async Task<int> Run(Filter filter, Authentication auth)
         {
-            this.client.Initialize(filter.UserName, filter.Password).Wait();
-            if (!string.IsNullOrWhiteSpace(filter.DownloadPath))
+            this.client.Initialize(auth.UserName, auth.ClearTextPassword).Wait();
+            var expandedPath = Environment.ExpandEnvironmentVariables(filter.DownloadPath);
+            if (!string.IsNullOrWhiteSpace(expandedPath))
             {
-                if (!Directory.Exists(filter.DownloadPath))
+                if (!Directory.Exists(expandedPath))
                 {
-                    Directory.CreateDirectory(filter.DownloadPath);
+                    Directory.CreateDirectory(expandedPath);
                 }
             }
             else
@@ -52,9 +53,9 @@ namespace RingVideos
             {
                 message.AppendLine($"End Date:\t\t{filter.EndDateTime.Value} [UTC: {filter.EndDateTimeUtc.Value}]");
             }
-            if (!string.IsNullOrWhiteSpace(filter.DownloadPath))
+            if (!string.IsNullOrWhiteSpace(expandedPath))
             {
-                message.AppendLine($"Download Path:\t{filter.DownloadPath}");
+                message.AppendLine($"Download Path:\t{expandedPath}");
             }
             if(filter.VideoCount != 10000)
             {
@@ -76,22 +77,23 @@ namespace RingVideos
 
         internal async Task<bool> SaveRecordingAsync(Ding ding, Filter filter)
         {
-            log.LogInformation($"--------------\r\nDevice: {ding.Device.Type}\r\nCreatedAt: {ding.CreatedAt}\r\nAnswered: {ding.Answered}\r\nId: {ding.Id}\r\n" +
+            log.LogInformation($"--------------\r\nDevice: {ding.Device.Type}\r\nCreatedAt (UTC): {ding.CreatedAtUtc}\r\n" +
+                $"Created At (local): {ding.CreatedAtLocal}\r\nAnswered: {ding.Answered}\r\nId: {ding.Id}\r\n" +
                          $"RecordingIsReady: {ding.RecordingIsReady}\r\nType: {ding.Type}\r\nDevice Name: {ding.Device.Description}\r\n--------------");
             log.LogDebug($"Getting url for {ding.Id}");
             string filename = string.Empty;
             Uri url = null;
+            var expandedPath = Environment.ExpandEnvironmentVariables(filter.DownloadPath);
             try
             {
                 url = await client.GetRecordingUriAsync(ding);
                 log.LogDebug(url.ToString());
                 var wc = new System.Net.WebClient();
-                TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAt);
-                var est = ding.CreatedAt.AddHours(TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAt).Hours);
-                filename = Path.Combine(filter.DownloadPath, 
+                TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtUtc);
+                var est = ding.CreatedAtUtc.AddHours(TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtUtc).Hours);
+                filename = Path.Combine(expandedPath, 
                     $"{est.Year}-{est.Month.ToString().PadLeft(2, '0')}-{est.Day.ToString().PadLeft(2, '0')}-T{est.Hour.ToString().PadLeft(2, '0')}_{est.Minute.ToString().PadLeft(2, '0')}_{est.Second.ToString().PadLeft(2, '0')}--{ding.Device.Description}-{ding.Type}.mp4");
 
-                log.LogInformation($"Downloading File: {filename}");
                 Download(url, filename, wc);
                 log.LogInformation($"{filename} -- complete."); 
 

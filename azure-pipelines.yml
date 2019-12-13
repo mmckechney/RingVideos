@@ -1,32 +1,60 @@
+trigger:
+- master
+
 pool:
   vmImage: 'windows-latest'
 
 variables:
-  BuildConfiguration: 'Release'
+  buildConfiguration: 'Release'
+  dotnetSdkVersion: '3.x'
+  exeRuntime: 'win10-x64'
 
 steps:
+- task: DotNetCoreInstaller@0
+  inputs:
+    version: $(dotnetSdkVersion)
+
+# do this before your build tasks
 - task: DotNetCoreCLI@2
-  displayName: Restore
+  displayName: 'Restore project dependencies'
   inputs:
     command: restore
     projects: '**/*.csproj'
 
 - task: DotNetCoreCLI@2
-  displayName: Build
+  displayName: 'Build the project - $(buildConfiguration)'
   inputs:
+    command: build
     projects: '**/*.csproj'
-    arguments: '--configuration $(BuildConfiguration)'
+    arguments: '--no-restore --configuration $(buildConfiguration)'
+
 - task: DotNetCoreCLI@2
-  displayName: 'Publish Ring Video app'
+  displayName: 'Publish the project - $(buildConfiguration)'
   inputs:
-    command: publish
+    command: 'publish'
+    projects: '**/*.csproj'
     publishWebProjects: false
-    projects: 'RingVideos/RingVideos.csproj'
-    arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory) -r win-x64 '
-    zipAfterPublish: True
+    arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)/dll'
+    zipAfterPublish: true
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish the project as a self contained EXE - $(buildConfiguration)'
+  inputs:
+    command: 'publish'
+    projects: '**/*.csproj'
+    publishWebProjects: false
+    arguments: '--no-build --configuration $(buildConfiguration) -r $(exeRuntime) --self-contained true --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)/Contained_Exe'
+    zipAfterPublish: true
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish the project as a framework dependent EXE - $(buildConfiguration)'
+  inputs:
+    command: 'publish'
+    projects: '**/*.csproj'
+    publishWebProjects: false
+    arguments: '--no-build --configuration $(buildConfiguration) -r $(exeRuntime) --self-contained false --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)/Dependent_Exe'
+    zipAfterPublish: true
 
 - task: PublishBuildArtifacts@1
-  displayName: 'Publish Artifact'
-  inputs:
-    PathtoPublish: '$(build.artifactstagingdirectory)'
-  condition: succeededOrFailed()
+  displayName: 'Publish Artifact: drop'
+  condition: succeeded()

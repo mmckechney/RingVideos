@@ -14,7 +14,23 @@ namespace Ring.Models
         /// <summary>
         /// The time that the ding occurred.
         /// </summary>
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAtUtc { get; set; }
+        /// <summary>
+        /// The time that the ding occurred.
+        /// </summary>
+        public DateTime CreatedAtLocal
+        {
+            get
+            {
+                if (CreatedAtUtc != null)
+                {
+                    return CreatedAtUtc.ToLocalTime();
+                }else
+                {
+                    return DateTime.MinValue;
+                }
+            }
+        }
         /// <summary>
         /// Represents if the ding was answered.
         /// </summary>
