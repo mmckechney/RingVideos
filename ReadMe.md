@@ -1,4 +1,7 @@
 ﻿# Ring Videos Downloader
+
+[![Build Status](https://dev.azure.com/mckechney/RingVideos/_apis/build/status/mmckechney.RingVideos?branchName=master)](https://dev.azure.com/mckechney/RingVideos/_build/latest?definitionId=12&branchName=master)
+
 This simple console app (written in .NET Core) will allow you do perform a bulk download of your [Ring.com](https://www.ring.com) videos.
 You can download videos based in a date range and/or if they are starred
 ## Usage
@@ -16,7 +19,7 @@ options:
     --password          Your Ring password. Note: You can also save this an an environment variable: RingPassword
 ```
 
-
+With version 1.2, the app will also save your settings to a local config file. This will allow you to just re-run the app with no parameters and have it download the videos since your last run.
 ## Credits
 This console app and API library  was based off of:
  [php-ring-api](https://github.com/jeroenmoors/php-ring-api) by [Jeroen Moors](https://github.com/jeroenmoors) and
