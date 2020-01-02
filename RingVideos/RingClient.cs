@@ -135,7 +135,7 @@ namespace RingVideos
 
             if (!response.IsSuccessStatusCode)
             {
-                log.LogDebug($"Failed to authenticate);
+                log.LogDebug($"Failed to authenticate");
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     throw new SecurityException("The Ring API returned the following error: " + response.ReasonPhrase);
