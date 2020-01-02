@@ -43,7 +43,7 @@ namespace RingVideos
                     logConfig.SetMinimumLevel(LogLevel.Debug);
                 }
 
-                SetAuthenticationValues(a);
+                SetAuthenticationValues(ref a);
 
                // Start up logic here
                 app.Run(f,a).Wait();
@@ -81,7 +81,7 @@ namespace RingVideos
             File.WriteAllText(settingsFile, config);
         }
 
-        private static void SetAuthenticationValues(Authentication a)
+        private static void SetAuthenticationValues(ref Authentication a)
         {
             if(string.IsNullOrWhiteSpace(a.UserName))
             {

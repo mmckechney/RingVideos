@@ -65,7 +65,7 @@ namespace RingVideos
 
             log.LogInformation(message.ToString());
 
-
+            log.LogInformation("Querying for videos to download...");
             var dings = await client.GetDingsAsync(filter.StartDateTimeUtc,filter.EndDateTimeUtc,filter.VideoCount, filter.OnlyStarred);
             log.LogInformation($"Found {dings.Count} videos to download");
 
@@ -87,15 +87,24 @@ namespace RingVideos
             try
             {
                 url = await client.GetRecordingUriAsync(ding);
-                log.LogDebug(url.ToString());
-                var wc = new System.Net.WebClient();
-                TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtUtc);
-                var est = ding.CreatedAtUtc.AddHours(TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtUtc).Hours);
-                filename = Path.Combine(expandedPath, 
-                    $"{est.Year}-{est.Month.ToString().PadLeft(2, '0')}-{est.Day.ToString().PadLeft(2, '0')}-T{est.Hour.ToString().PadLeft(2, '0')}_{est.Minute.ToString().PadLeft(2, '0')}_{est.Second.ToString().PadLeft(2, '0')}--{ding.Device.Description}-{ding.Type}.mp4");
+                if (url != null)
+                {
+                    log.LogDebug(url.ToString());
+                    var wc = new System.Net.WebClient();
+                    TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtUtc);
+                    var est = ding.CreatedAtUtc.AddHours(TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtUtc).Hours);
+                    filename = Path.Combine(expandedPath,
+                        $"{est.Year}-{est.Month.ToString().PadLeft(2, '0')}-{est.Day.ToString().PadLeft(2, '0')}-T{est.Hour.ToString().PadLeft(2, '0')}_{est.Minute.ToString().PadLeft(2, '0')}_{est.Second.ToString().PadLeft(2, '0')}--{ding.Device.Description}-{ding.Type}.mp4");
 
-                Download(url, filename, wc);
-                log.LogInformation($"{filename} -- complete."); 
+                    Download(url, filename, wc);
+                    log.LogInformation($"{filename} -- complete.");
+                }
+                else
+                {
+                    log.LogDebug("URL is null");
+                    return false;
+                }
+               
 
             }
             catch (Exception exe)

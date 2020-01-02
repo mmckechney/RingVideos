@@ -164,7 +164,7 @@ namespace RingVideos
                     case "password":
                         a.ClearTextPassword = dict[key.ToString()];
                         break;
-                    case "debug:":
+                    case "debug":
                     case "d":
                     case "trace":
                     case "t":

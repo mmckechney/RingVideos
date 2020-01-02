@@ -130,10 +130,12 @@ namespace RingVideos
         /// <returns></returns>
         internal async Task Initialize(string username, string password)
         {
+            log.LogInformation("Authenticating with Ring");
             var response = await Authorize(username, password);
 
             if (!response.IsSuccessStatusCode)
             {
+                log.LogDebug($"Failed to authenticate);
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     throw new SecurityException("The Ring API returned the following error: " + response.ReasonPhrase);
@@ -158,6 +160,7 @@ namespace RingVideos
 
             if (!response.IsSuccessStatusCode)
             {
+                log.LogInformation($"Failed to authenticate");
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     throw new SecurityException("The Ring API returned the following error: " + response.ReasonPhrase);
@@ -206,7 +209,7 @@ namespace RingVideos
             httpHandler.AllowAutoRedirect = true;
             httpHandler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
-            var httpClient = new HttpClient(httpHandler);
+            httpClient = new HttpClient(httpHandler);
 
             string json = $"{{ \"client_id\": \"ring_official_android\", \"grant_type\": \"password\", \"password\": \"{password}\", \"scope\": \"client\", \"username\": \"{username}\" }}";
 
@@ -214,6 +217,7 @@ namespace RingVideos
 
             if (!response.IsSuccessStatusCode)
             {
+                log.LogInformation($"Failed to authenticate");
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     throw new SecurityException("The Ring OAuth provider returned the following error: " + response.ReasonPhrase);
@@ -426,7 +430,7 @@ namespace RingVideos
                                 log.LogTrace("Added Ding to collection");
                                 dings.Add(tmp);
                             }
-                            log.LogDebug(dings.Count.ToString());
+                            //log.LogDebug(dings.Count.ToString());
                         }
                         if (dings.Count >= maxVideoCount)
                         {
@@ -487,7 +491,7 @@ namespace RingVideos
                 }
             }
 
-            return response.Headers.Location;
+            return response.RequestMessage.RequestUri;
         }
     }
 }
