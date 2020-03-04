@@ -15,6 +15,7 @@ using System.Text.Json;
 using System.Threading.Tasks.Sources;
 using System.Text;
 using System.Net.Security;
+using KoenZomers.Ring.Api;
 
 namespace RingVideos
 {
@@ -45,20 +46,24 @@ namespace RingVideos
 
                 SetAuthenticationValues(ref a);
 
-               // Start up logic here
-                app.Run(f,a).Wait();
+                // Start up logic here
+                Task<int> val = app.Run(f, a);
+                val.Wait();
 
-                SaveSettings(f, a);
+                SaveSettings(f, a, val.Result);
             }
         }
 
-        private static void SaveSettings(Filter f, Authentication a)
+        private static void SaveSettings(Filter f, Authentication a, int runResult)
         {
 
             a.Encrypt();
             //Set "next dates" on filter
-            f.StartDateTime = f.EndDateTime.Value.AddDays(-1);
-            f.EndDateTime = null;
+            if (runResult == 0)
+            {
+                f.StartDateTime = f.EndDateTime.Value.AddDays(-1);
+                f.EndDateTime = null;
+            }
 
             var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"RingVideos");
             if(!Directory.Exists(folder))
@@ -107,6 +112,15 @@ namespace RingVideos
                     throw new ArgumentException("A Ring password is requires");
                 }
             }
+
+            if (string.IsNullOrWhiteSpace(a.RefreshToken))
+            {
+                var rt = System.Environment.GetEnvironmentVariable("RefreshToken");
+                if (!string.IsNullOrWhiteSpace(rt))
+                {
+                    a.RefreshToken = rt;
+                }
+            }
         }
 
         private static void ConfigureServices(ServiceCollection services, string[] args)
@@ -129,13 +143,13 @@ namespace RingVideos
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .Build();
 
-     
+
             services.AddTransient<RingVideoApplication>()
-            .AddTransient<RingClient>()
             .AddTransient<Arguments>();
 
-         
-         
+
+
+
         }
 
        
