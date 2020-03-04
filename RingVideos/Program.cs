@@ -16,41 +16,88 @@ using System.Threading.Tasks.Sources;
 using System.Text;
 using System.Net.Security;
 using KoenZomers.Ring.Api;
+using System.CommandLine;
+using System.CommandLine.Invocation;
 
 namespace RingVideos
 {
     class Program
     {
         public static IConfiguration Configuration { get; set; }
-   
+        public static Authentication auth;
+        public static Filter filter;
+        public static ServiceProvider serviceProvider = null;
+        public static RingVideoApplication app;
 
         static void Main(string[] args)
         {
+            var startOption = new Option(new string[] { "--start", "-s" }, "Start time (earliest videos to download)")
+            {
+                Argument = new Argument<DateTime>("start", () => DateTime.MinValue),
+                Required = false
+            };
+
+            var endOption = new Option(new string[] { "--end", "-e" }, "End time (latest videos to download)")
+            {
+                Argument = new Argument<DateTime>("end", () => DateTime.MaxValue),
+                Required = false
+            };
+
+            var pathOption = new Option(new string[] { "--path" }, "Path to save videos to")
+            {
+                Argument = new Argument<string>("path", () => string.Empty),
+                Required = false
+            };
+
+            var passwordOption = new Option(new string[] { "--password", "-p" }, "Ring account password")
+            {
+                Argument = new Argument<string>("password", () => string.Empty),
+                Required = false
+            };
+
+            var userNameOption = new Option(new string[] { "--username", "-u" }, "Ring account username")
+            {
+                Argument = new Argument<string>("username", () => string.Empty),
+                Required = false
+            };
+
+            var starredOption = new Option(new string[] { "--starred" }, "Flag to only download Starred videos")
+            {
+                Argument = new Argument<bool>("starred", () => false),
+                Required = false
+            };
+
+            var maxcountOption = new Option(new string[] { "--maxcount", "-m" }, "Maximum number of videos to download")
+            {
+                Argument = new Argument<int>("maxcount", () => 1000),
+                Required = false
+            };
+            RootCommand rootCommand = new RootCommand(description: "Simple command line tool to download videos from your Ring account")
+            {
+                Handler = CommandHandler.Create<string, string, string, DateTime, DateTime, bool, int>(GetVideos)
+            };
+            rootCommand.Add(userNameOption);
+            rootCommand.Add(passwordOption);
+            rootCommand.Add(pathOption);
+            rootCommand.Add(startOption);
+            rootCommand.Add(endOption);
+            rootCommand.Add(starredOption);
+            rootCommand.Add(maxcountOption);
+           
+
             var services = new ServiceCollection();
             ConfigureServices(services,args);
             using (ServiceProvider serviceProvider = services.BuildServiceProvider())
             {
-                RingVideoApplication app = serviceProvider.GetService<RingVideoApplication>();
-                Arguments argument = serviceProvider.GetService<Arguments>();
-                Authentication auth = Configuration.GetSection("Authentication").Get<Authentication>();
+                app = serviceProvider.GetService<RingVideoApplication>();
+                auth = Configuration.GetSection("Authentication").Get<Authentication>();
                 auth.Decrypt();
-                Filter filter = Configuration.GetSection("Filter").Get<Filter>();
+                filter = Configuration.GetSection("Filter").Get<Filter>();
 
-                (Filter f, Authentication a) = argument.ParseCommandline(args, auth, filter);
-
-                if (f.SetDebug)
-                {
-                    var logConfig = serviceProvider.GetService<ILoggingBuilder>();
-                    logConfig.SetMinimumLevel(LogLevel.Debug);
-                }
-
-                SetAuthenticationValues(ref a);
-
-                // Start up logic here
-                Task<int> val = app.Run(f, a);
+                Task<int> val = rootCommand.InvokeAsync(args);
                 val.Wait();
 
-                SaveSettings(f, a, val.Result);
+                SaveSettings(Program.filter, Program.auth, val.Result);
             }
         }
 
@@ -144,14 +191,60 @@ namespace RingVideos
                 .Build();
 
 
-            services.AddTransient<RingVideoApplication>()
-            .AddTransient<Arguments>();
-
-
-
-
+            services.AddTransient<RingVideoApplication>();
+           // .AddTransient<Arguments>();
         }
 
+        private static async Task<int> GetVideos(string username, string password, string path, DateTime start, DateTime end, bool starred, int maxcount)
+        {
+            if(!string.IsNullOrEmpty(username))
+            {
+                auth.UserName = username;
+            }
+            if (!string.IsNullOrEmpty(password))
+            {
+                auth.ClearTextPassword = password;
+            }
+            if (!string.IsNullOrEmpty(path))
+            {
+                filter.DownloadPath = path;
+            }
+            if (start != DateTime.MinValue)
+            {
+                filter.StartDateTime = start;
+            }
+            if (end != DateTime.MaxValue)
+            {
+                filter.EndDateTime = start;
+            }
+            if(starred)
+            {
+                filter.OnlyStarred = starred;
+            }
+            if (maxcount != 1000)
+            {
+                filter.VideoCount = maxcount;
+            }
+            if (filter.StartDateTime.HasValue)
+            {
+                filter.StartDateTimeUtc = TimeZoneInfo.ConvertTimeToUtc(filter.StartDateTime.Value, TimeZoneInfo.Local);
+            }
+            if (filter.EndDateTime.HasValue)
+            {
+                filter.EndDateTimeUtc = TimeZoneInfo.ConvertTimeToUtc(filter.EndDateTime.Value, TimeZoneInfo.Local);
+            }
+
+            if (Program.filter.SetDebug)
+            {
+                var logConfig = serviceProvider.GetService<ILoggingBuilder>();
+                logConfig.SetMinimumLevel(LogLevel.Debug);
+            }
+
+            SetAuthenticationValues(ref Program.auth);
+
+            return await app.Run(Program.filter, Program.auth);
+
+        }
        
 
     }

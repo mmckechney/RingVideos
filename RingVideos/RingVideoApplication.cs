@@ -10,7 +10,6 @@ using System.Threading;
 using System.Text;
 using Newtonsoft.Json.Serialization;
 using KoenZomers.Ring.Api;
-//using KoenZomers.Ring.Api.Entities;
 
 namespace RingVideos
 {
@@ -18,7 +17,6 @@ namespace RingVideos
     {
 
         private readonly ILogger log;
-        //private readonly RingClient client;
         private Session ringSession;
         public RingVideoApplication(ILogger<RingVideoApplication> logger)
         {
@@ -83,7 +81,6 @@ namespace RingVideos
                 {
                     return 999;
                 }
-                //this.client.Initialize(auth.UserName, auth.ClearTextPassword).Wait();
                 var expandedPath = Environment.ExpandEnvironmentVariables(filter.DownloadPath);
                 if (!string.IsNullOrWhiteSpace(expandedPath))
                 {
@@ -125,16 +122,11 @@ namespace RingVideos
                 {
                     dings = dings.Where(d => d.Favorite == true).ToList();
                 }
-                //var dings = await client.GetDingsAsync(filter.StartDateTimeUtc,filter.EndDateTimeUtc,filter.VideoCount, filter.OnlyStarred);
                 log.LogInformation($"Found {dings.Count()} videos to download");
 
                 var tasks =  dings.Select(x => SaveRecordingAsync(x, filter));
                 var results = await Task.WhenAll(tasks);
 
-                //foreach (var d in dings)
-                //{
-                //    await SaveRecordingAsync(d, filter);
-                //}
                 log.LogInformation("Done!");
                 return 0;
             }catch(Exception exe)
@@ -149,7 +141,7 @@ namespace RingVideos
             log.LogInformation($"--------------\r\nDevice: {ding.Doorbot.Kind}\r\nCreatedAt (UTC): {ding.CreatedAtDateTime}\r\n" +
                 $"Created At (local): {ding.CreatedAtDateTime.Value.ToLocalTime()}\r\nAnswered: {ding.Answered}\r\nId: {ding.Id}\r\n" +
                          $"RecordingIsReady: {ding.Recording.Status}\r\nType: {ding.Kind}\r\nDevice Name: {ding.Doorbot.Description}\r\n--------------");
-            //log.LogDebug($"Getting url for {ding.Id}");
+
             string filename = string.Empty;
             var expandedPath = Environment.ExpandEnvironmentVariables(filter.DownloadPath);
             int attempt = 1, itemCount = 0;
@@ -199,85 +191,5 @@ namespace RingVideos
             return true;
         }
 
-        //internal async Task<bool> SaveRecordingAsync(Ding ding, Filter filter)
-        //{
-        //    log.LogInformation($"--------------\r\nDevice: {ding.Device.Type}\r\nCreatedAt (UTC): {ding.CreatedAtUtc}\r\n" +
-        //        $"Created At (local): {ding.CreatedAtLocal}\r\nAnswered: {ding.Answered}\r\nId: {ding.Id}\r\n" +
-        //                 $"RecordingIsReady: {ding.RecordingIsReady}\r\nType: {ding.Type}\r\nDevice Name: {ding.Device.Description}\r\n--------------");
-        //    log.LogDebug($"Getting url for {ding.Id}");
-        //    string filename = string.Empty;
-        //    Uri url = null;
-        //    var expandedPath = Environment.ExpandEnvironmentVariables(filter.DownloadPath);
-        //    try
-        //    {
-        //        url = await client.GetRecordingUriAsync(ding);
-        //        if (url != null)
-        //        {
-        //            log.LogDebug(url.ToString());
-        //            var wc = new System.Net.WebClient();
-        //            TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtUtc);
-        //            var est = ding.CreatedAtUtc.AddHours(TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtUtc).Hours);
-        //            filename = Path.Combine(expandedPath,
-        //                $"{est.Year}-{est.Month.ToString().PadLeft(2, '0')}-{est.Day.ToString().PadLeft(2, '0')}-T{est.Hour.ToString().PadLeft(2, '0')}_{est.Minute.ToString().PadLeft(2, '0')}_{est.Second.ToString().PadLeft(2, '0')}--{ding.Device.Description}-{ding.Type}.mp4");
-
-        //            Download(url, filename, wc);
-        //            log.LogInformation($"{filename} -- complete.");
-        //        }
-        //        else
-        //        {
-        //            log.LogDebug("URL is null");
-        //            return false;
-        //        }
-               
-
-        //    }
-        //    catch (Exception exe)
-        //    {
-        //        log.LogError(DownloadErrorMessage(ding, filename, url, exe));
-        //        return false;
-        //    }
-
-        //    return true;
-        //}
-
-        //internal bool Download(Uri url, string filename, WebClient wc, int retry =0)
-        //{
-        //    try
-        //    {
-        //        log.LogInformation($"Downloading File: {filename}");
-        //        wc.DownloadFile(url, filename);
-        //        return true;
-        //    }
-        //    catch (Exception exe)
-        //    {
-        //        if (retry < 5)
-        //        {
-        //            log.LogDebug($"Retry download for {filename}: Count {retry}. Reason: {exe.Message}");
-        //            Thread.Sleep(new Random().Next(5000, 10000));
-        //            Download(url, filename, wc, retry + 1);
-        //            return true;
-        //        }
-        //        log.LogError($"Problem downloading file: {filename}\r\n{exe.ToString()}");
-        //    }
-        //    return false;
-        //}
-
-        //private string DownloadErrorMessage(Ding ding, string fileName, Uri url, Exception exe)
-        //{
-        //    StringBuilder sb = new StringBuilder("Error saving recording:\r\n");
-        //    sb.AppendLine($"Id:{ding.Id}");
-        //    sb.AppendLine($"Filename: {fileName}");
-        //    if (url != null)
-        //    {
-        //        sb.AppendLine($"Url: {url.ToString()}");
-        //    }
-        //    else
-        //    {
-        //        sb.AppendLine($"Url: null");
-        //    }
-        //    sb.AppendLine($"Exception: {exe.ToString()}");
-
-        //    return sb.ToString();
-        //}
     }
 }
