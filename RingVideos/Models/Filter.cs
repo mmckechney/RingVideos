@@ -11,8 +11,11 @@ namespace RingVideos.Models
     {
         public string UserName { get; set; }
         public string Password { get; set; }
+        public string RefreshToken { get; set; }
         [JsonIgnore]
         public string ClearTextPassword { get; set; }
+        [JsonIgnore]
+        public string ClearTextRefreshToken { get; set; }
         public string EncryptionIV { get; set; }
         private string Key
         {
@@ -46,6 +49,20 @@ namespace RingVideos.Models
                             csEncrypt.Close();
                             var encrBytes = msEncrypt.ToArray();
                             this.Password = Convert.ToBase64String(encrBytes);
+                        }
+                    }
+
+                    clearTextBytes = Encoding.ASCII.GetBytes(this.ClearTextRefreshToken);
+                    // Create the streams used for decryption.
+                    using (MemoryStream msEncrypt = new MemoryStream())
+                    {
+                        using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                        {
+
+                            csEncrypt.Write(clearTextBytes, 0, clearTextBytes.Length);
+                            csEncrypt.Close();
+                            var encrBytes = msEncrypt.ToArray();
+                            this.RefreshToken = Convert.ToBase64String(encrBytes);
                         }
                     }
                 }
@@ -88,9 +105,23 @@ namespace RingVideos.Models
                             this.ClearTextPassword = System.Text.Encoding.UTF8.GetString(clearBytes);
                         }
                     }
+
+                    var refreshBytes = Convert.FromBase64String(this.RefreshToken);
+                    // Create the streams used for decryption.
+                    using (MemoryStream msDecrypt = new MemoryStream())
+                    {
+                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
+                        {
+                            csDecrypt.Write(refreshBytes, 0, refreshBytes.Length);
+                            csDecrypt.Close();
+                            var clearBytes = msDecrypt.ToArray();
+                            this.ClearTextRefreshToken = System.Text.Encoding.UTF8.GetString(clearBytes);
+                        }
+                    }
                 }
                 return true;
-            }catch(Exception exe)
+            }
+            catch(Exception exe)
             {
                 this.ClearTextPassword = this.Password;
                 return false;
