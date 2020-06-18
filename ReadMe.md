@@ -11,22 +11,30 @@ RingVideos:
   Simple command line tool to download videos from your Ring account
 
 Usage:
-  RingVideos [options]
+  RingVideos [options] [command]
 
 Options:
-  -u, --username <username>    Ring account username
-  -p, --password <password>    Ring account password
-  --path <path>                Path to save videos to
-  -s, --start <start>          Start time (earliest videos to download)
-  -e, --end <end>              End time (latest videos to download)
-  --starred                    Flag to only download Starred videos
-  -m, --maxcount <maxcount>    Maximum number of videos to download
-  --version                    Show version information
+  --version         Show version information
+  -?, -h, --help    Show help and usage information
+
+Commands:
+  starred     Download only starred videos
+  all         Download all videos (starred and unstarred)
+  snapshot    Download only snapshot images
+
+Options:
+  -u, --username <username>    Ring account username [default: ]
+  -p, --password <password>    Ring account password [default: ]
+  --path <path>                Path to save videos to [default: ]
+  -s, --start <start>          Start time (earliest videos to download) [default: 1/1/0001 12:00:00 AM]
+  -e, --end <end>              End time (latest videos to download) [default: 12/31/9999 11:59:59 PM]
+  -m, --maxcount <maxcount>    Maximum number of videos to download [default: 1000]
   -?, -h, --help               Show help and usage information
 ```
 
 - Version 1.2: The app will also save your settings to a local config file. This will allow you to just re-run the app with no parameters and have it download the videos since your last run.
 - Version 1.3: Updated to leverage the KoenZomers.Ring.Api Nuget package to interact with the Ring API
+- Version 2.0: Updated calling syntax to use sub-commands vs flags. Can now also create and download a current snapshot
 
 ## Credits
 This console app and API library  was based off of:
