@@ -121,7 +121,7 @@ namespace RingVideos.Models
                 }
                 return true;
             }
-            catch(Exception exe)
+            catch(Exception)
             {
                 this.ClearTextPassword = this.Password;
                 return false;
@@ -141,8 +141,13 @@ namespace RingVideos.Models
         public DateTime? EndDateTimeUtc { get; set; }
         public string DownloadPath { get; set; }
         public string TimeZone { get; set; }
+        [JsonIgnore]
         public bool OnlyStarred { get; set; } = false;
         public bool SetDebug { get; set; } = false;
+        [JsonIgnore]
+        public bool Snapshots { get; set; } = false;
+        public DateTime? SnapshotsStartDateTime { get; set; }
+        public DateTime? SnapshotsEndDateTime { get; set; } = DateTime.Today.AddDays(1).AddSeconds(-1);
 
     }
 

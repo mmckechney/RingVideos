@@ -113,19 +113,25 @@ namespace RingVideos
                     message.AppendLine($"Max downloads:\t{filter.VideoCount}");
                 }
                 message.AppendLine($"Only Starred:\t{filter.OnlyStarred}");
+                message.AppendLine($"Snapshots:\t{filter.Snapshots}");
 
                 log.LogInformation(message.ToString());
-
-                log.LogInformation("Querying for videos to download...");
-                var dings = await ringSession.GetDoorbotsHistory(filter.StartDateTimeUtc.Value, filter.EndDateTimeUtc);
-                if (filter.OnlyStarred)
+                if (!filter.Snapshots)
                 {
-                    dings = dings.Where(d => d.Favorite == true).ToList();
-                }
-                log.LogInformation($"Found {dings.Count()} videos to download");
+                    log.LogInformation("Querying for videos to download...");
+                    var dings = await ringSession.GetDoorbotsHistory(filter.StartDateTimeUtc.Value, filter.EndDateTimeUtc);
+                    if (filter.OnlyStarred)
+                    {
+                        dings = dings.Where(d => d.Favorite == true).ToList();
+                    }
+                    log.LogInformation($"Found {dings.Count()} videos to download");
 
-                var tasks =  dings.Select(x => SaveRecordingAsync(x, filter));
-                var results = await Task.WhenAll(tasks);
+                    var tasks = dings.Select(x => SaveRecordingAsync(x, filter));
+                    var results = await Task.WhenAll(tasks);
+                }else
+                {
+                   await DownloadSnapshots(filter);
+                }
 
                 log.LogInformation("Done!");
                 return 0;
@@ -134,6 +140,48 @@ namespace RingVideos
                 log.LogError(exe.ToString());
                 return -1;
             }
+        }
+
+        internal async Task<bool> DownloadSnapshots(Filter filter)
+        {
+            var expandedPath = Environment.ExpandEnvironmentVariables(filter.DownloadPath);
+            DateTime est = DateTime.Now;
+            string fileNameFormat = Path.Combine(expandedPath,
+                $"{est.Year}-{est.Month.ToString().PadLeft(2, '0')}-{est.Day.ToString().PadLeft(2, '0')}-T{est.Hour.ToString().PadLeft(2, '0')}_{est.Minute.ToString().PadLeft(2, '0')}_{est.Second.ToString().PadLeft(2, '0')}" + "--{0}.jpg");
+
+            string fileName = string.Empty;
+            var devices = await this.ringSession.GetRingDevices();
+            foreach(var d in devices.Doorbots)
+            {
+                fileName = string.Format(fileNameFormat, d.Description);
+                await GetSnapshot(d.Id, fileName);
+            }
+            foreach (var d in devices.Chimes)
+            {
+                fileName = string.Format(fileNameFormat, d.Description);
+                await GetSnapshot(d.Id, fileName);
+            }
+            foreach (var d in devices.AuthorizedDoorbots)
+            {
+                fileName = string.Format(fileNameFormat, d.Description);
+                await GetSnapshot(d.Id, fileName);
+            }
+            foreach (var d in devices.StickupCams)
+            {
+                fileName = string.Format(fileNameFormat, d.Description);
+                await GetSnapshot((int)d.Id, fileName);
+            }
+
+            return true;
+            
+        }
+        internal async Task<bool> GetSnapshot(int doorbotId, string fileName)
+        {
+            await this.ringSession.UpdateSnapshot(doorbotId);
+            await this.ringSession.GetLatestSnapshot(doorbotId,fileName);
+            log.LogInformation($"Downloaded snapshot {fileName}");
+
+            return true;
         }
 
         internal async Task<bool> SaveRecordingAsync(KoenZomers.Ring.Api.Entities.DoorbotHistoryEvent ding, Filter filter)
@@ -149,7 +197,7 @@ namespace RingVideos
             TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtDateTime.Value);
             var est = ding.CreatedAtDateTime.Value.AddHours(TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtDateTime.Value).Hours);
             filename = Path.Combine(expandedPath,
-                $"{est.Year}-{est.Month.ToString().PadLeft(2, '0')}-{est.Day.ToString().PadLeft(2, '0')}-T{est.Hour.ToString().PadLeft(2, '0')}_{est.Minute.ToString().PadLeft(2, '0')}_{est.Second.ToString().PadLeft(2, '0')}--{ding.Doorbot.Description}-{ding.Doorbot.Kind}.mp4");
+                $"{est.Year}-{est.Month.ToString().PadLeft(2, '0')}-{est.Day.ToString().PadLeft(2, '0')}-T{est.Hour.ToString().PadLeft(2, '0')}_{est.Minute.ToString().PadLeft(2, '0')}_{est.Second.ToString().PadLeft(2, '0')}--{ding.Doorbot.Description}.mp4");
 
             do
             {

@@ -1,23 +1,16 @@
 ﻿
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RingVideos.Models;
 using System;
-using System.Collections;
-using System.Net;
-using System.Threading.Tasks;
-using System.Linq;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.FileExtensions;
-using Microsoft.Extensions.Configuration.Json;
-using System.IO;
-using System.Text.Json;
-using System.Threading.Tasks.Sources;
-using System.Text;
-using System.Net.Security;
-using KoenZomers.Ring.Api;
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.IO;
+using System.Linq;
+using System.Net.NetworkInformation;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace RingVideos
 {
@@ -72,18 +65,45 @@ namespace RingVideos
                 Argument = new Argument<int>("maxcount", () => 1000),
                 Required = false
             };
-            RootCommand rootCommand = new RootCommand(description: "Simple command line tool to download videos from your Ring account")
-            {
-                Handler = CommandHandler.Create<string, string, string, DateTime, DateTime, bool, int>(GetVideos)
-            };
-            rootCommand.Add(userNameOption);
-            rootCommand.Add(passwordOption);
-            rootCommand.Add(pathOption);
-            rootCommand.Add(startOption);
-            rootCommand.Add(endOption);
-            rootCommand.Add(starredOption);
-            rootCommand.Add(maxcountOption);
+            RootCommand rootCommand = new RootCommand(description: "Simple command line tool to download videos from your Ring account");
            
+            var starCommand = new Command("starred", "Download only starred videos")
+            {
+                Handler = CommandHandler.Create<string, string, string, DateTime, DateTime, int>(GetStarredVideos)
+            };
+            var allCommand = new Command("all", "Download all videos (starred and unstarred)")
+            {
+                Handler = CommandHandler.Create<string, string, string, DateTime, DateTime, int>(GetAllVideos)
+            };
+            var snapshotCommand = new Command("snapshot", "Download only snapshot images")
+            {
+                Handler = CommandHandler.Create<string, string, string, DateTime, DateTime>(GetSnapshotImages)
+            };
+
+            rootCommand.Add(starCommand);
+            rootCommand.Add(allCommand);
+            rootCommand.Add(snapshotCommand);
+
+            starCommand.Add(userNameOption);
+            starCommand.Add(passwordOption);
+            starCommand.Add(pathOption);
+            starCommand.Add(startOption);
+            starCommand.Add(endOption);
+            starCommand.Add(maxcountOption);
+
+            allCommand.Add(userNameOption);
+            allCommand.Add(passwordOption);
+            allCommand.Add(pathOption);
+            allCommand.Add(startOption);
+            allCommand.Add(endOption);
+            allCommand.Add(maxcountOption);
+
+            snapshotCommand.Add(userNameOption);
+            snapshotCommand.Add(passwordOption);
+            snapshotCommand.Add(pathOption);
+            snapshotCommand.Add(startOption);
+            snapshotCommand.Add(endOption);
+
 
             var services = new ServiceCollection();
             ConfigureServices(services,args);
@@ -106,7 +126,7 @@ namespace RingVideos
 
             a.Encrypt();
             //Set "next dates" on filter
-            if (runResult == 0)
+            if (runResult == 0 && !f.Snapshots)
             {
                 f.StartDateTime = f.EndDateTime.Value.AddDays(-1);
                 f.EndDateTime = null;
@@ -195,7 +215,21 @@ namespace RingVideos
            // .AddTransient<Arguments>();
         }
 
-        private static async Task<int> GetVideos(string username, string password, string path, DateTime start, DateTime end, bool starred, int maxcount)
+
+        private static async Task<int> GetSnapshotImages(string username, string password, string path, DateTime start, DateTime end)
+        {
+            return await GetVideos(username, password, path, start, end, false,true, 1000);
+        }
+
+        private static async Task<int> GetAllVideos(string username, string password, string path, DateTime start, DateTime end, int maxcount)
+        {
+            return await GetVideos(username, password, path, start, end, false,false, maxcount);
+        }
+        private static async Task<int> GetStarredVideos(string username, string password, string path, DateTime start, DateTime end, int maxcount)
+        {
+            return await GetVideos(username, password, path, start, end, true, false, maxcount);
+        }
+        private static async Task<int> GetVideos(string username, string password, string path, DateTime start, DateTime end, bool starred, bool snapshot, int maxcount)
         {
             if(!string.IsNullOrEmpty(username))
             {
@@ -221,6 +255,10 @@ namespace RingVideos
             {
                 filter.OnlyStarred = starred;
             }
+            if (snapshot)
+            {
+                filter.Snapshots = snapshot;
+            }
             if (maxcount != 1000)
             {
                 filter.VideoCount = maxcount;
@@ -245,7 +283,7 @@ namespace RingVideos
             return await app.Run(Program.filter, Program.auth);
 
         }
-       
+    
 
     }
     
