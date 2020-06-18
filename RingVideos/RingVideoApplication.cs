@@ -175,6 +175,9 @@ namespace RingVideos
                     {
                         log.LogError($"Failed ({(e.InnerException != null ? e.InnerException.Message : e.Message)})");
                     }
+                }catch(Exception exe)
+                {
+                    log.LogError($"Failed ({(exe.InnerException != null ? exe.InnerException.Message : exe.Message)})");
                 }
 
                 if (attempt >=10)
