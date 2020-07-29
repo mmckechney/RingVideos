@@ -30,10 +30,15 @@ namespace RingVideos
             {
                 // Use refresh token from previous session
                 Console.WriteLine("Authenticating using refresh token from previous session");
-
-                session = Session.GetSessionByRefreshToken(auth.ClearTextRefreshToken).Result;
+                try
+                {
+                    session = Session.GetSessionByRefreshToken(auth.ClearTextRefreshToken).Result;
+                } catch
+                {
+                    Console.WriteLine("Failed to authenticate with refresh token");
+                }
             }
-            else
+            if (session == null)
             {
                 // Use the username and password provided
                 Console.WriteLine("Authenticating using provided username and password");
