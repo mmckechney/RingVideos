@@ -111,8 +111,18 @@ namespace RingVideos
             {
                 app = serviceProvider.GetService<RingVideoApplication>();
                 auth = Configuration.GetSection("Authentication").Get<Authentication>();
-                auth.Decrypt();
+                if (auth != null)
+                {
+                    auth.Decrypt();
+                }else
+                {
+                    auth = new Authentication();
+                }
                 filter = Configuration.GetSection("Filter").Get<Filter>();
+                if(filter == null)
+                {
+                    filter = new Filter();
+                }
 
                 Task<int> val = rootCommand.InvokeAsync(args);
                 val.Wait();
@@ -123,37 +133,38 @@ namespace RingVideos
 
         private static void SaveSettings(Filter f, Authentication a, int runResult)
         {
+            if (f != null && a != null){
+                a.Encrypt();
+                //Set "next dates" on filter
+                if (runResult == 0 && !f.Snapshots)
+                {
+                    f.StartDateTime = f.EndDateTime.Value.AddDays(-1);
+                    f.EndDateTime = null;
+                }
 
-            a.Encrypt();
-            //Set "next dates" on filter
-            if (runResult == 0 && !f.Snapshots)
-            {
-                f.StartDateTime = f.EndDateTime.Value.AddDays(-1);
-                f.EndDateTime = null;
+                var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"RingVideos");
+                if (!Directory.Exists(folder))
+                {
+                    Directory.CreateDirectory(folder);
+                }
+
+                string settingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"RingVideos\RingVideosConfig.json");
+                var serializeOptions = new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                };
+                var conf = new Config()
+                {
+                    Authentication = a,
+                    Filter = f
+                };
+                var config = JsonSerializer.Serialize(conf, serializeOptions);
+
+                File.WriteAllText(settingsFile, config);
             }
-
-            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"RingVideos");
-            if(!Directory.Exists(folder))
-            {
-                Directory.CreateDirectory(folder);
-            }
-
-            string settingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"RingVideos\RingVideosConfig.json");
-            var serializeOptions = new JsonSerializerOptions
-            {
-                WriteIndented = true
-            };
-            var conf = new Config()
-            {
-                Authentication = a,
-                Filter = f
-            };
-            var config = JsonSerializer.Serialize(conf, serializeOptions);
-
-            File.WriteAllText(settingsFile, config);
         }
 
-        private static void SetAuthenticationValues(ref Authentication a)
+        private static bool SetAuthenticationValues(ref Authentication a)
         {
             if(string.IsNullOrWhiteSpace(a.UserName))
             {
@@ -164,7 +175,8 @@ namespace RingVideos
                 }
                 else
                 {
-                    throw new ArgumentException("A Ring username is requires");
+                    Console.WriteLine("A Ring username is required");
+                    return false;
                 }
             }
             if (string.IsNullOrWhiteSpace(a.ClearTextPassword))
@@ -176,7 +188,8 @@ namespace RingVideos
                 }
                 else
                 {
-                    throw new ArgumentException("A Ring password is requires");
+                    Console.WriteLine("A Ring password is required");
+                    return false;
                 }
             }
 
@@ -188,6 +201,7 @@ namespace RingVideos
                     a.RefreshToken = rt;
                 }
             }
+            return true;
         }
 
         private static void ConfigureServices(ServiceCollection services, string[] args)
@@ -267,9 +281,19 @@ namespace RingVideos
             {
                 filter.StartDateTimeUtc = TimeZoneInfo.ConvertTimeToUtc(filter.StartDateTime.Value, TimeZoneInfo.Local);
             }
+            else
+            {
+                filter.StartDateTime = DateTime.MinValue;
+                filter.StartDateTimeUtc = DateTime.MinValue;
+            }
             if (filter.EndDateTime.HasValue)
             {
                 filter.EndDateTimeUtc = TimeZoneInfo.ConvertTimeToUtc(filter.EndDateTime.Value, TimeZoneInfo.Local);
+            }
+            else
+            {
+                filter.EndDateTime = DateTime.MaxValue;
+                filter.EndDateTimeUtc = DateTime.MaxValue;
             }
 
             if (Program.filter.SetDebug)
@@ -278,9 +302,15 @@ namespace RingVideos
                 logConfig.SetMinimumLevel(LogLevel.Debug);
             }
 
-            SetAuthenticationValues(ref Program.auth);
-
-            return await app.Run(Program.filter, Program.auth);
+            if (SetAuthenticationValues(ref Program.auth))
+            {
+                return await app.Run(Program.filter, Program.auth);
+            }
+            else
+            {
+                return -200;
+            }
+            
 
         }
     

@@ -82,7 +82,7 @@ namespace RingVideos
             try
             {
                 this.ringSession = await Authenicate(auth);
-                if (this.ringSession == null)
+                if (this.ringSession == null || !this.ringSession.IsAuthenticated)
                 {
                     return 999;
                 }
