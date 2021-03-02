@@ -27,43 +27,43 @@ namespace RingVideos
             var startOption = new Option(new string[] { "--start", "-s" }, "Start time (earliest videos to download)")
             {
                 Argument = new Argument<DateTime>("start", () => DateTime.MinValue),
-                Required = false
+                IsRequired = false
             };
 
             var endOption = new Option(new string[] { "--end", "-e" }, "End time (latest videos to download)")
             {
                 Argument = new Argument<DateTime>("end", () => DateTime.MaxValue),
-                Required = false
+                IsRequired = false
             };
 
             var pathOption = new Option(new string[] { "--path" }, "Path to save videos to")
             {
                 Argument = new Argument<string>("path", () => string.Empty),
-                Required = false
+                IsRequired = false
             };
 
             var passwordOption = new Option(new string[] { "--password", "-p" }, "Ring account password")
             {
                 Argument = new Argument<string>("password", () => string.Empty),
-                Required = false
+                IsRequired = false
             };
 
             var userNameOption = new Option(new string[] { "--username", "-u" }, "Ring account username")
             {
                 Argument = new Argument<string>("username", () => string.Empty),
-                Required = false
+                IsRequired = false
             };
 
             var starredOption = new Option(new string[] { "--starred" }, "Flag to only download Starred videos")
             {
                 Argument = new Argument<bool>("starred", () => false),
-                Required = false
+                IsRequired = false
             };
 
             var maxcountOption = new Option(new string[] { "--maxcount", "-m" }, "Maximum number of videos to download")
             {
                 Argument = new Argument<int>("maxcount", () => 1000),
-                Required = false
+                IsRequired = false
             };
             RootCommand rootCommand = new RootCommand(description: "Simple command line tool to download videos from your Ring account");
            
