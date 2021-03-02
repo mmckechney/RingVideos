@@ -32,4 +32,14 @@ jobs:
       with:
         name: ringvideos
         path: "./RingVideos/bin/Release/netcoreapp3.1/win-x64/publish"
+        
+        
+    - name: Publish for Linx
+      run: dotnet publish -r linux-x64 --configuration Release
+    
+    - name: Upload a Linux Build Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ringvideos-linux
+        path: "./RingVideos/bin/Release/netcoreapp3.1/linux-x64/publish"
 
