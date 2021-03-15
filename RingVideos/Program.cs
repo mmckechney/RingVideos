@@ -263,7 +263,11 @@ namespace RingVideos
             }
             if (end != DateTime.MaxValue)
             {
-                filter.EndDateTime = start;
+                filter.EndDateTime = end;
+            }
+            else
+            {
+                filter.EndDateTime = DateTime.Now;
             }
             if(starred)
             {

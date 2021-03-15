@@ -10,7 +10,7 @@ using System.Threading;
 using System.Text;
 using Newtonsoft.Json.Serialization;
 using KoenZomers.Ring.Api;
-
+using MoreLinq;
 namespace RingVideos
 {
     public class RingVideoApplication
@@ -131,8 +131,15 @@ namespace RingVideos
                     }
                     log.LogInformation($"Found {dings.Count()} videos to download");
 
-                    var tasks = dings.Select(x => SaveRecordingAsync(x, filter));
-                    var results = await Task.WhenAll(tasks);
+
+                    //Run in batches of 10
+                    var batches = dings.Batch(10);
+                    foreach(var batch in batches)
+                    {
+                        var tasks = batch.Select(x => SaveRecordingAsync(x, filter));
+                        var results = await Task.WhenAll(tasks);
+                    }
+
                 }else
                 {
                    await DownloadSnapshots(filter);
@@ -191,24 +198,32 @@ namespace RingVideos
 
         internal async Task<bool> SaveRecordingAsync(KoenZomers.Ring.Api.Entities.DoorbotHistoryEvent ding, Filter filter)
         {
-            log.LogInformation($"--------------\r\nDevice: {ding.Doorbot.Kind}\r\nCreatedAt (UTC): {ding.CreatedAtDateTime}\r\n" +
-                $"Created At (local): {ding.CreatedAtDateTime.Value.ToLocalTime()}\r\nAnswered: {ding.Answered}\r\nId: {ding.Id}\r\n" +
-                         $"RecordingIsReady: {ding.Recording.Status}\r\nType: {ding.Kind}\r\nDevice Name: {ding.Doorbot.Description}\r\n--------------");
 
             string filename = string.Empty;
             var expandedPath = Environment.ExpandEnvironmentVariables(filter.DownloadPath);
-            int attempt = 1, itemCount = 0;
 
             TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtDateTime.Value);
             var est = ding.CreatedAtDateTime.Value.AddHours(TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtDateTime.Value).Hours);
             filename = Path.Combine(expandedPath,
                 $"{est.Year}-{est.Month.ToString().PadLeft(2, '0')}-{est.Day.ToString().PadLeft(2, '0')}-T{est.Hour.ToString().PadLeft(2, '0')}_{est.Minute.ToString().PadLeft(2, '0')}_{est.Second.ToString().PadLeft(2, '0')}--{ding.Doorbot.Description}.mp4");
 
+            string msg = $"Downloading:{ filename}\r\n";
+            //msg = msg + $"CreatedAt (UTC): {ding.CreatedAtDateTime}\r\n";
+            msg = msg + $"Created At (local): {ding.CreatedAtDateTime.Value.ToLocalTime()}\r\n";
+            //msg = msg + $"Answered: {ding.Answered}\r\n";
+            msg = msg + $"Id: {ding.Id}\r\n";
+            //msg = msg + $"RecordingIsReady: {ding.Recording.Status}\r\n";
+            //msg = msg + $"Type: {ding.Kind}\r\n";
+            msg = msg + $"Device Name: {ding.Doorbot.Description}\r\n";
+            msg = msg + $"--------------";
+            log.LogInformation(msg);
+
+            int attempt = 1, itemCount = 0;
             do
             {
                 attempt++;
 
-                log.LogInformation($"{itemCount + 1} - {filename}... ");
+                //log.LogInformation($"{itemCount + 1} - {filename}... ");
                 try
                 {
                     await this.ringSession.GetDoorbotHistoryRecording(ding, filename);
@@ -235,12 +250,12 @@ namespace RingVideos
 
                 if (attempt >=10)
                 {
-                    log.LogWarning("Giving up.");
+                    log.LogWarning($"Giving up on {filename} after {attempt} tries.");
                     return false;
                 }
                 else
                 {
-                    log.LogInformation($"Retrying {attempt + 1}/10.");
+                    log.LogInformation($"Retrying: {attempt + 1}/10 for {filename}.");
                 }
 
             } while (attempt < 10);
