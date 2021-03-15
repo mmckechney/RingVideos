@@ -218,7 +218,7 @@ namespace RingVideos
             msg = msg + $"--------------";
             log.LogInformation(msg);
 
-            int attempt = 1, itemCount = 0;
+            int attempt = 1;
             do
             {
                 attempt++;
