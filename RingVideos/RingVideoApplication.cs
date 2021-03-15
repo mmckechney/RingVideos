@@ -258,7 +258,7 @@ namespace RingVideos
                     log.LogInformation($"Retrying: {attempt + 1}/10 for {filename}.");
                 }
 
-            } while (attempt < 10);
+            } while (attempt < 10);  
             return true;
         }
 
