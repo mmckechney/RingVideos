@@ -68,7 +68,7 @@ namespace RingVideos.Models
                 }
                 return true;
             }
-            catch (Exception exe)
+            catch (Exception)
             {
 
                 return false;
