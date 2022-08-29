@@ -5,10 +5,9 @@ using Microsoft.Extensions.Logging;
 using RingVideos.Models;
 using System;
 using System.CommandLine;
-using System.CommandLine.Invocation;
+using System.CommandLine.NamingConventionBinder;
 using System.IO;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -24,61 +23,24 @@ namespace RingVideos
 
         static void Main(string[] args)
         {
-            var startOption = new Option(new string[] { "--start", "-s" }, "Start time (earliest videos to download)")
-            {
-                Argument = new Argument<DateTime>("start", () => DateTime.MinValue),
-                IsRequired = false
-            };
-
-            var endOption = new Option(new string[] { "--end", "-e" }, "End time (latest videos to download)")
-            {
-                Argument = new Argument<DateTime>("end", () => DateTime.MaxValue),
-                IsRequired = false
-            };
-
-            var pathOption = new Option(new string[] { "--path" }, "Path to save videos to")
-            {
-                Argument = new Argument<string>("path", () => string.Empty),
-                IsRequired = false
-            };
-
-            var passwordOption = new Option(new string[] { "--password", "-p" }, "Ring account password")
-            {
-                Argument = new Argument<string>("password", () => string.Empty),
-                IsRequired = false
-            };
-
-            var userNameOption = new Option(new string[] { "--username", "-u" }, "Ring account username")
-            {
-                Argument = new Argument<string>("username", () => string.Empty),
-                IsRequired = false
-            };
-
-            var starredOption = new Option(new string[] { "--starred" }, "Flag to only download Starred videos")
-            {
-                Argument = new Argument<bool>("starred", () => false),
-                IsRequired = false
-            };
-
-            var maxcountOption = new Option(new string[] { "--maxcount", "-m" }, "Maximum number of videos to download")
-            {
-                Argument = new Argument<int>("maxcount", () => 1000),
-                IsRequired = false
-            };
+            var startOption = new Option<DateTime>(new string[] { "--start", "-s" }, () => DateTime.MinValue, "Start time (earliest videos to download)");
+            var endOption = new Option<DateTime>(new string[] { "--end", "-e" }, () => DateTime.MaxValue, "End time (latest videos to download)");
+            var pathOption = new Option<string>(new string[] { "--path" }, () => string.Empty, "Path to save videos to");
+            var passwordOption = new Option<string>(new string[] { "--password", "-p" }, () => string.Empty, "Ring account password");
+            var userNameOption = new Option<string>(new string[] { "--username", "-u" }, () => string.Empty, "Ring account username");
+            var starredOption = new Option<bool>(new string[] { "--starred" }, () => false, "Flag to only download Starred videos");
+            var maxcountOption = new Option<int>(new string[] { "--maxcount", "-m" }, () => 1000, "Maximum number of videos to download");
+      ;
             RootCommand rootCommand = new RootCommand(description: "Simple command line tool to download videos from your Ring account");
-           
-            var starCommand = new Command("starred", "Download only starred videos")
-            {
-                Handler = CommandHandler.Create<string, string, string, DateTime, DateTime, int>(GetStarredVideos)
-            };
-            var allCommand = new Command("all", "Download all videos (starred and unstarred)")
-            {
-                Handler = CommandHandler.Create<string, string, string, DateTime, DateTime, int>(GetAllVideos)
-            };
-            var snapshotCommand = new Command("snapshot", "Download only snapshot images")
-            {
-                Handler = CommandHandler.Create<string, string, string, DateTime, DateTime>(GetSnapshotImages)
-            };
+
+            var starCommand = new Command("starred", "Download only starred videos");
+            starCommand.Handler = CommandHandler.Create<string, string, string, DateTime, DateTime, int>(GetStarredVideos);
+
+            var allCommand = new Command("all", "Download all videos (starred and unstarred)");
+            allCommand.Handler = CommandHandler.Create<string, string, string, DateTime, DateTime, int>(GetAllVideos);
+
+            var snapshotCommand = new Command("snapshot", "Download only snapshot images");
+            snapshotCommand.Handler = CommandHandler.Create<string, string, string, DateTime, DateTime>(GetSnapshotImages);
 
             rootCommand.Add(starCommand);
             rootCommand.Add(allCommand);
