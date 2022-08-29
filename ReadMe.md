@@ -1,6 +1,6 @@
 ﻿# Ring Videos Downloader
 
-[![Build Status](https://dev.azure.com/mckechney/RingVideos/_apis/build/status/mmckechney.RingVideos?branchName=master)](https://dev.azure.com/mckechney/RingVideos/_build/latest?definitionId=12&branchName=master)
+[![Build Status](https://github.com/mmckechney/RingVideos/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mmckechney/RingVideos/actions/workflows/dotnet.yml)
 
 This simple console app (written in .NET Core) will allow you do perform a bulk download of your [Ring.com](https://www.ring.com) videos.
 You can download videos based in a date range and/or if they are starred
