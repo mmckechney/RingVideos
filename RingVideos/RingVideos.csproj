@@ -10,7 +10,7 @@
     <PackageLicenseFile>License.md</PackageLicenseFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="KoenZomers.Ring.Api" Version="0.4.3.2" />
+    <PackageReference Include="KoenZomers.Ring.Api" Version="0.5.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
