@@ -203,7 +203,7 @@ namespace RingVideos
             var expandedPath = Environment.ExpandEnvironmentVariables(filter.DownloadPath);
 
             TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtDateTime.Value);
-            var est = ding.CreatedAtDateTime.Value.AddHours(TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtDateTime.Value).Hours);
+            var est = ding.CreatedAtDateTime.Value.ToLocalTime();
             filename = Path.Combine(expandedPath,
                 $"{est.Year}-{est.Month.ToString().PadLeft(2, '0')}-{est.Day.ToString().PadLeft(2, '0')}-T{est.Hour.ToString().PadLeft(2, '0')}_{est.Minute.ToString().PadLeft(2, '0')}_{est.Second.ToString().PadLeft(2, '0')}--{ding.Doorbot.Description}.mp4");
 
