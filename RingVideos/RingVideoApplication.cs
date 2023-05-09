@@ -267,7 +267,6 @@ namespace RingVideos
 
                 } while (attempt < 10);
 
-                semaphore.Release();
                 return true;
             }
             finally
