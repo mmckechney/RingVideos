@@ -11,6 +11,8 @@ using System.Text;
 using Newtonsoft.Json.Serialization;
 using KoenZomers.Ring.Api;
 using MoreLinq;
+using System.Collections.Generic;
+
 namespace RingVideos
 {
     public class RingVideoApplication
@@ -18,6 +20,7 @@ namespace RingVideos
 
         private readonly ILogger log;
         private Session ringSession;
+        private static SemaphoreSlim semaphore = new SemaphoreSlim(5, 10);
         public RingVideoApplication(ILogger<RingVideoApplication> logger)
         {
             log = logger;
@@ -131,23 +134,24 @@ namespace RingVideos
                     }
                     log.LogInformation($"Found {dings.Count()} videos to download");
 
+                    var messages = new List<string>();
 
-                    //Run in batches of 10
-                    var batches = dings.Batch(10);
-                    foreach(var batch in batches)
+                    List<Task> tasks = new List<Task>();
+                    foreach (var ding in dings)
                     {
-                        var tasks = batch.Select(x => SaveRecordingAsync(x, filter));
-                        var results = await Task.WhenAll(tasks);
+                        tasks.Add(SaveRecordingAsync(ding, filter));
                     }
-
-                }else
+                    Task.WaitAll(tasks.ToArray());
+                }
+                else
                 {
-                   await DownloadSnapshots(filter);
+                    await DownloadSnapshots(filter);
                 }
 
                 log.LogInformation("Done!");
                 return 0;
-            }catch(Exception exe)
+            }
+            catch(Exception exe)
             {
                 log.LogError(exe.ToString());
                 return -1;
@@ -198,68 +202,77 @@ namespace RingVideos
 
         internal async Task<bool> SaveRecordingAsync(KoenZomers.Ring.Api.Entities.DoorbotHistoryEvent ding, Filter filter)
         {
-
-            string filename = string.Empty;
-            var expandedPath = Environment.ExpandEnvironmentVariables(filter.DownloadPath);
-
-            TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtDateTime.Value);
-            var est = ding.CreatedAtDateTime.Value.ToLocalTime();
-            filename = Path.Combine(expandedPath,
-                $"{est.Year}-{est.Month.ToString().PadLeft(2, '0')}-{est.Day.ToString().PadLeft(2, '0')}-T{est.Hour.ToString().PadLeft(2, '0')}_{est.Minute.ToString().PadLeft(2, '0')}_{est.Second.ToString().PadLeft(2, '0')}--{ding.Doorbot.Description}.mp4");
-
-            string msg = $"Downloading:{ filename}\r\n";
-            //msg = msg + $"CreatedAt (UTC): {ding.CreatedAtDateTime}\r\n";
-            msg = msg + $"Created At (local): {ding.CreatedAtDateTime.Value.ToLocalTime()}\r\n";
-            //msg = msg + $"Answered: {ding.Answered}\r\n";
-            msg = msg + $"Id: {ding.Id}\r\n";
-            //msg = msg + $"RecordingIsReady: {ding.Recording.Status}\r\n";
-            //msg = msg + $"Type: {ding.Kind}\r\n";
-            msg = msg + $"Device Name: {ding.Doorbot.Description}\r\n";
-            msg = msg + $"--------------";
-            log.LogInformation(msg);
-
-            int attempt = 1;
-            do
+            semaphore.Wait();
+            try
             {
-                attempt++;
+                string filename = string.Empty;
+                var expandedPath = Environment.ExpandEnvironmentVariables(filter.DownloadPath);
 
-                //log.LogInformation($"{itemCount + 1} - {filename}... ");
-                try
+                TimeZoneInfo.Local.GetUtcOffset(ding.CreatedAtDateTime.Value);
+                var est = ding.CreatedAtDateTime.Value.ToLocalTime();
+                filename = Path.Combine(expandedPath,
+                    $"{est.Year}-{est.Month.ToString().PadLeft(2, '0')}-{est.Day.ToString().PadLeft(2, '0')}-T{est.Hour.ToString().PadLeft(2, '0')}_{est.Minute.ToString().PadLeft(2, '0')}_{est.Second.ToString().PadLeft(2, '0')}--{ding.Doorbot.Description}.mp4");
+
+                string msg = $"Downloading:{filename}\r\n";
+                //msg = msg + $"CreatedAt (UTC): {ding.CreatedAtDateTime}\r\n";
+                msg = msg + $"Created At (local): {ding.CreatedAtDateTime.Value.ToLocalTime()}\r\n";
+                //msg = msg + $"Answered: {ding.Answered}\r\n";
+                msg = msg + $"Id: {ding.Id}\r\n";
+                //msg = msg + $"RecordingIsReady: {ding.Recording.Status}\r\n";
+                //msg = msg + $"Type: {ding.Kind}\r\n";
+                msg = msg + $"Device Name: {ding.Doorbot.Description}\r\n";
+                msg = msg + $"--------------";
+                log.LogInformation(msg);
+
+                int attempt = 1;
+                do
                 {
-                    await this.ringSession.GetDoorbotHistoryRecording(ding, filename);
-                    log.LogInformation($"Complete - {filename} ({new FileInfo(filename).Length / 1048576} MB)");
-                    break;
-                }
-                catch (AggregateException e)
-                {
-                    if (e.InnerException != null && e.InnerException.GetType() == typeof(System.Net.WebException) && ((System.Net.WebException)e.InnerException).Response != null)
+                    attempt++;
+
+                    //log.LogInformation($"{itemCount + 1} - {filename}... ");
+                    try
                     {
-                        var webException = (System.Net.WebException)e.InnerException;
-                        var response = new StreamReader(webException.Response.GetResponseStream()).ReadToEnd();
+                        await this.ringSession.GetDoorbotHistoryRecording(ding, filename);
+                        log.LogInformation($"Complete - {filename} ({new FileInfo(filename).Length / 1048576} MB)");
+                        break;
+                    }
+                    catch (AggregateException e)
+                    {
+                        if (e.InnerException != null && e.InnerException.GetType() == typeof(System.Net.WebException) && ((System.Net.WebException)e.InnerException).Response != null)
+                        {
+                            var webException = (System.Net.WebException)e.InnerException;
+                            var response = new StreamReader(webException.Response.GetResponseStream()).ReadToEnd();
 
-                        log.LogError($"Failed ({(e.InnerException != null ? e.InnerException.Message : e.Message)} - {response})");
+                            log.LogError($"Failed ({(e.InnerException != null ? e.InnerException.Message : e.Message)} - {response})");
+                        }
+                        else
+                        {
+                            log.LogError($"Failed ({(e.InnerException != null ? e.InnerException.Message : e.Message)})");
+                        }
+                    }
+                    catch (Exception exe)
+                    {
+                        log.LogError($"Failed ({(exe.InnerException != null ? exe.InnerException.Message : exe.Message)})");
+                    }
+
+                    if (attempt >= 10)
+                    {
+                        log.LogWarning($"Giving up on {filename} after {attempt} tries.");
+                        return false;
                     }
                     else
                     {
-                        log.LogError($"Failed ({(e.InnerException != null ? e.InnerException.Message : e.Message)})");
+                        log.LogInformation($"Retrying: {attempt + 1}/10 for {filename}.");
                     }
-                }catch(Exception exe)
-                {
-                    log.LogError($"Failed ({(exe.InnerException != null ? exe.InnerException.Message : exe.Message)})");
-                }
 
-                if (attempt >=10)
-                {
-                    log.LogWarning($"Giving up on {filename} after {attempt} tries.");
-                    return false;
-                }
-                else
-                {
-                    log.LogInformation($"Retrying: {attempt + 1}/10 for {filename}.");
-                }
+                } while (attempt < 10);
 
-            } while (attempt < 10);  
-            return true;
+                return true;
+            }
+            finally
+            {
+                semaphore.Release();
+            }
         }
 
     }

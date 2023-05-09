@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace RingVideos
 {
@@ -168,18 +169,19 @@ namespace RingVideos
 
         private static void ConfigureServices(ServiceCollection services, string[] args)
         {
+            var level = LogLevel.Information;
+            
             if (args.Any(a => a.ToLower().EndsWith("-d") || a.ToLower().EndsWith("-debug")))
             {
-                services.AddLogging(configure => configure.AddConsole().SetMinimumLevel(LogLevel.Debug));
+                level = LogLevel.Debug;
             }
             else if(args.Any(a => a.ToLower().EndsWith("-t") || a.ToLower().EndsWith("-trace")))
             {
-                services.AddLogging(configure => configure.AddConsole().SetMinimumLevel(LogLevel.Trace));
+                level = LogLevel.Trace;
             }
-            else
-            {
-                services.AddLogging(configure => configure.AddConsole().SetMinimumLevel(LogLevel.Information));
-            }
+            
+            services.AddLogging(configure => configure.AddConsole().SetMinimumLevel(level));
+            
 
             Configuration = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"RingVideos\RingVideosConfig.json"), optional: true, reloadOnChange: true)
