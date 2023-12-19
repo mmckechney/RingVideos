@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
-    <Version>2.1.2</Version>
+    <TargetFramework>net8.0</TargetFramework>
+    <Version>2.1.233</Version>
     <Authors>MIchael McKechney</Authors>
     <Company>blueskydev.us</Company>
     <Description>Bulk downloader for Ring.com videos.</Description>
@@ -10,14 +10,13 @@
     <PackageLicenseFile>License.md</PackageLicenseFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="KoenZomers.Ring.Api" Version="0.5.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0-preview.3.23174.8" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.0-preview.3.23174.8" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0-preview.3.23174.8" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0-preview.3.23174.8" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0-preview.3.23174.8" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0-preview.3.23174.8" />
-    <PackageReference Include="morelinq" Version="3.4.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+    <PackageReference Include="morelinq" Version="4.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
     <PackageReference Include="System.CommandLine.NamingConventionBinder" Version="2.0.0-beta4.22272.1" />
@@ -27,6 +26,9 @@
       <Pack>True</Pack>
       <PackagePath />
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\RingApi\Api\Api.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appSettings.json">

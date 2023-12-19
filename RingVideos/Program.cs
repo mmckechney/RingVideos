@@ -31,7 +31,9 @@ namespace RingVideos
             var userNameOption = new Option<string>(new string[] { "--username", "-u" }, () => string.Empty, "Ring account username");
             var starredOption = new Option<bool>(new string[] { "--starred" }, () => false, "Flag to only download Starred videos");
             var maxcountOption = new Option<int>(new string[] { "--maxcount", "-m" }, () => 1000, "Maximum number of videos to download");
-      ;
+            var debugLogOption = new Option<bool>(new string[] { "-d", "--debug" },"Debug log option flag");
+            var traceLogOption = new Option<bool>(new string[] { "-t", "--trace" }, "Trace log option flag");
+            ;
             RootCommand rootCommand = new RootCommand(description: "Simple command line tool to download videos from your Ring account");
 
             var starCommand = new Command("starred", "Download only starred videos");
@@ -46,6 +48,8 @@ namespace RingVideos
             rootCommand.Add(starCommand);
             rootCommand.Add(allCommand);
             rootCommand.Add(snapshotCommand);
+            rootCommand.AddOption(debugLogOption);
+            rootCommand.AddOption(traceLogOption);
 
             starCommand.Add(userNameOption);
             starCommand.Add(passwordOption);
