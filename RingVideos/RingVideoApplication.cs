@@ -64,12 +64,14 @@ namespace RingVideos
                 catch (KoenZomers.Ring.Api.Exceptions.ThrottledException e)
                 {
                     Console.WriteLine(e.Message);
-                    //Environment.Exit(1);
                 }
-                catch (System.Net.WebException)
+                catch(KoenZomers.Ring.Api.Exceptions.AuthenticationFailedException e)
                 {
-                    Console.WriteLine("Connection failed. Validate your credentials.");
-                    //Environment.Exit(1);
+                    Console.Write($"{e.Message}: Please validate your credentials");
+                }
+                catch (System.Net.WebException e )
+                {
+                    Console.WriteLine($"{e.Message}: Connection failed, please validate your credentials.");
                 }
             }
 
@@ -89,6 +91,13 @@ namespace RingVideos
                 {
                     return 999;
                 }
+
+                if(filter.DownloadPath == null)
+                {
+                    log.LogError("A valid download path '--path' argument is required");
+                    return -1;
+                }
+
                 var expandedPath = Environment.ExpandEnvironmentVariables(filter.DownloadPath);
                 if (!string.IsNullOrWhiteSpace(expandedPath))
                 {
