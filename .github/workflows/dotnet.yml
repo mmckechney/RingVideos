@@ -16,7 +16,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 7.x
+        dotnet-version: 8.x
      
     - name: Restore dependencies
       run: dotnet restore
@@ -31,7 +31,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ringvideos
-        path: "./RingVideos/bin/Release/net7.0/win-x64/publish"
+        path: "./RingVideos/bin/Release/net8.0/win-x64/publish"
         
         
     - name: Publish for Linx
@@ -41,5 +41,5 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ringvideos-linux
-        path: "./RingVideos/bin/Release/net7.0/linux-x64/publish"
+        path: "./RingVideos/bin/Release/net8.0/linux-x64/publish"
 
