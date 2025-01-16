@@ -28,7 +28,7 @@ jobs:
       run: dotnet publish -r win-x64 --configuration Release
     
     - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: ringvideos
         path: "./RingVideos/bin/Release/net8.0/win-x64/publish"
@@ -38,7 +38,7 @@ jobs:
       run: dotnet publish -r linux-x64 --configuration Release
     
     - name: Upload a Linux Build Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: ringvideos-linux
         path: "./RingVideos/bin/Release/net8.0/linux-x64/publish"
@@ -48,7 +48,7 @@ jobs:
       run: dotnet publish -r osx-arm64 --configuration Release
       
     - name: Upload a Mac OSX ARM Build Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: ringvideos-osx-arm
         path: "./RingVideos/bin/Release/net8.0/osx-arm64/publish"
@@ -57,7 +57,7 @@ jobs:
       run: dotnet publish -r osx-x64 --configuration Release
         
     - name: Upload a Mac OSX x64 Build Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: ringvideos-osx-x64
         path: "./RingVideos/bin/Release/net8.0/osx-x64/publish"
