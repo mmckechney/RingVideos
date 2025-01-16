@@ -62,3 +62,53 @@ jobs:
         name: ringvideos-osx-x64
         path: "./RingVideos/bin/Release/net8.0/osx-x64/publish"
 
+    - name: Create GitHub Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: Release ${{ github.run_number }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset (Windows)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./RingVideos/bin/Release/net8.0/win-x64/publish
+        asset_name: ringvideos-win-x64.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Asset (Linux)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./RingVideos/bin/Release/net8.0/linux-x64/publish
+        asset_name: ringvideos-linux-x64.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Asset (OSX ARM)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./RingVideos/bin/Release/net8.0/osx-arm64/publish
+        asset_name: ringvideos-osx-arm64.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Asset (OSX x64)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./RingVideos/bin/Release/net8.0/osx-x64/publish
+        asset_name: ringvideos-osx-x64.zip
+        asset_content_type: application/zip
