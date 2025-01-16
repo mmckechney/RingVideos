@@ -21,10 +21,8 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
       
-    - name: Build
-      run: dotnet build --no-restore
-    
-    - name: Publish
+    # Windows x64    
+    - name: Publish for Windows
       run: dotnet publish -r win-x64 --configuration Release
     
     - name: Upload a Build Artifact
@@ -32,8 +30,24 @@ jobs:
       with:
         name: ringvideos
         path: "./RingVideos/bin/Release/net8.0/win-x64/publish"
+
+    - name: Zip Windows files 
+      run: zip -r ringvideos.zip ./RingVideos/bin/Release/net8.0/win-x64/publish
+
+    # Windows x64    
+    - name: Publish for Windows ARM
+      run: dotnet publish -r win-arm64 --configuration Release
+    
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ringvideos-arm64
+        path: "./RingVideos/bin/Release/net8.0/win-arm64/publish"
+
+    - name: Zip Windows files 
+      run: zip -r ringvideos-arm64.zip ./RingVideos/bin/Release/net8.0/win-arm64/publish      
         
-        
+    #Linux x64    
     - name: Publish for Linux
       run: dotnet publish -r linux-x64 --configuration Release
     
@@ -43,7 +57,10 @@ jobs:
         name: ringvideos-linux
         path: "./RingVideos/bin/Release/net8.0/linux-x64/publish"
 
+    - name: Zip Linux x64 files 
+      run: zip -r ringvideos-linux-x64.zip ./RingVideos/bin/Release/net8.0/linux-x64/publish
 
+     #OSX ARM    
     - name: Publish for OSX ARM
       run: dotnet publish -r osx-arm64 --configuration Release
       
@@ -53,6 +70,10 @@ jobs:
         name: ringvideos-osx-arm
         path: "./RingVideos/bin/Release/net8.0/osx-arm64/publish"
 
+    - name: Zip OSX ARM files 
+      run: zip -r ringvideos-osx-arm.zip ./RingVideos/bin/Release/net8.0/osx-arm64/publish"
+
+    #OSX x64 
     - name: Publish for OSX x64
       run: dotnet publish -r osx-x64 --configuration Release
         
@@ -62,6 +83,10 @@ jobs:
         name: ringvideos-osx-x64
         path: "./RingVideos/bin/Release/net8.0/osx-x64/publish"
 
+    - name: Zip OSX x64 files
+      run: zip -r ringvideos-osx-x64.zip ./RingVideos/bin/Release/net8.0/osx-x64/publish"
+
+    #Create release    
     - name: Create GitHub Release
       id: create_release
       uses: actions/create-release@v1
@@ -79,8 +104,18 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./RingVideos/bin/Release/net8.0/win-x64/publish
-        asset_name: ringvideos-win-x64.zip
+        asset_path: ./ringvideos.zip
+        asset_name: ringvideos.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Asset (Windows ARM)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./ringvideos-arm64.zip
+        asset_name: ringvideos-arm64.zip
         asset_content_type: application/zip
 
     - name: Upload Release Asset (Linux)
@@ -89,7 +124,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./RingVideos/bin/Release/net8.0/linux-x64/publish
+        asset_path: ./ringvideos-linux-x64.zip
         asset_name: ringvideos-linux-x64.zip
         asset_content_type: application/zip
 
@@ -99,8 +134,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./RingVideos/bin/Release/net8.0/osx-arm64/publish
-        asset_name: ringvideos-osx-arm64.zip
+        asset_path: ./ringvideos-osx-arm.zip
+        asset_name: ringvideos-osx-arm.zip
         asset_content_type: application/zip
 
     - name: Upload Release Asset (OSX x64)
@@ -109,6 +144,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./RingVideos/bin/Release/net8.0/osx-x64/publish
+        asset_path: ./ringvideos-osx-x64.zip
         asset_name: ringvideos-osx-x64.zip
         asset_content_type: application/zip
