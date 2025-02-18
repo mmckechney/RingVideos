@@ -32,9 +32,12 @@ Options:
   -?, -h, --help               Show help and usage information
 ```
 
-- Version 1.2: The app will also save your settings to a local config file. This will allow you to just re-run the app with no parameters and have it download the videos since your last run.
-- Version 1.3: Updated to leverage the KoenZomers.Ring.Api Nuget package to interact with the Ring API
+- Version 3.0: Added additional download threading and retry options and (hopefully) better download status reporting in the console.
 - Version 2.0: Updated calling syntax to use sub-commands vs flags. Can now also create and download a current snapshot
+- Version 1.3: Updated to leverage the KoenZomers.Ring.Api Nuget package to interact with the Ring API
+- Version 1.2: The app will also save your settings to a local config file. This will allow you to just re-run the app with no parameters and have it download the videos since your last run.
+
+
 
 ## Credits
 This console app and API library  was based off of:
