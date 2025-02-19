@@ -6,6 +6,7 @@
       Warning,
       Error,
       Final,
-      Initial
+      Initial,
+      Highlight
    }
 }
