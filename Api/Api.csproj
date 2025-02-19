@@ -9,19 +9,19 @@
         <Version>1.0.1-mmckechney</Version>
         <Company>Koen Zomers</Company>
         <Authors>Koen Zomers, Daniel Espinosa</Authors>
-        <Description>API in .NET to communicate with the Ring Doorbell service</Description>
+        <!--<Description>API in .NET to communicate with the Ring Doorbell service</Description>
         <PackageProjectUrl>https://github.com/KoenZomers/RingApi</PackageProjectUrl>
-        <AssemblyVersion>$(ApiVersion)</AssemblyVersion>
+        <AssemblyVersion>1.0.1-mmckechney</AssemblyVersion>
         <PackageReleaseNotes>- Fixed 406 Http Response issue due to missing headers in http calls.</PackageReleaseNotes>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Copyright>Koen Zomers</Copyright>
         <FileVersion>1.0.1-mmckechney</FileVersion>
-        <!--<PackageReadmeFile>README.md</PackageReadmeFile>-->
+        <PackageReadmeFile>README.md</PackageReadmeFile>
         <RepositoryUrl>https://github.com/KoenZomers/RingApi</RepositoryUrl>
         <PackageLicenseExpression> EPL-2.0</PackageLicenseExpression>
         <PackageTags>Ring;Ring Api;Ring Doorbell;.NET;C#</PackageTags>
         <IncludeSymbols>true</IncludeSymbols>
-        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat> -->
     </PropertyGroup>
 
     <!--<ItemGroup>
