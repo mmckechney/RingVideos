@@ -14,6 +14,8 @@ namespace RingVideos
 {
    class Program
    {
+      public static string logFileBaseName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RingVideosData", "ringvideos.log");
+      public static string configFileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RingVideosData", "ringvideos.log");
       private static IConfigurationRoot Configuration;
       public static void Main(string[] args)
       {
@@ -31,14 +33,14 @@ namespace RingVideos
 
 
          Configuration = new ConfigurationBuilder()
-          .AddJsonFile(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RingVideos", "RingVideosConfig.json"), optional: true, reloadOnChange: true)
+          .AddJsonFile(configFileName, optional: true, reloadOnChange: true)
           .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
           .Build();
 
          // Configure Serilog
          Log.Logger = new LoggerConfiguration()
              .ReadFrom.Configuration(Configuration)
-             .WriteTo.File(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RingVideos", "ringvideos.log"), rollingInterval: RollingInterval.Day)
+             .WriteTo.File(logFileBaseName, rollingInterval: RollingInterval.Day)
              .CreateLogger();
 
          try
@@ -57,10 +59,6 @@ namespace RingVideos
       }
       public static IHostBuilder CreateHostBuilder(string[] args)
       {
-       
-
-
-
 
          var builder = new HostBuilder()
              .UseSerilog()

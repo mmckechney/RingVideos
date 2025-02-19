@@ -22,6 +22,7 @@ using System.Net.NetworkInformation;
 using System.Runtime.Intrinsics.X86;
 using RingVideos.Writers;
 
+
 namespace RingVideos
 {
    public class RingVideoApplication
@@ -33,8 +34,8 @@ namespace RingVideos
       public Filter Filter { get; set; } = new();
       public Authentication Auth { get; set; } = new();
       IConfiguration config;
-      public readonly string SavedSettingsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"RingVideos");
-      public readonly string SavedSettingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RingVideos","RingVideosConfig.json");
+      public readonly string SavedSettingsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"RingVideosData");
+      public readonly string SavedSettingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RingVideosData","RingVideosConfig.json");
       private ConsoleWriter cw;
       public RingVideoApplication(ILogger<RingVideoApplication> logger, IConfiguration config, ConsoleWriter consoleWriter)
       {
@@ -87,12 +88,12 @@ namespace RingVideos
          //Set "next dates" on filter
          if (lastFailureUtc.HasValue && !Filter.Snapshots)
          {
-            Filter.StartDateTimeUtc = lastFailureUtc.Value.AddMinutes(-1);
+            Filter.StartDateTime = lastFailureUtc.Value.AddMinutes(-1).ToLocalTime();
             Filter.EndDateTime = null;
          }
          else if (lastSuccessUtc.HasValue && !Filter.Snapshots)
          {
-            Filter.StartDateTimeUtc = lastSuccessUtc.Value;
+            Filter.StartDateTime = lastSuccessUtc.Value.ToLocalTime();
             Filter.EndDateTime = null;
          }
 
@@ -111,7 +112,45 @@ namespace RingVideos
          System.IO.File.WriteAllText(this.SavedSettingsFile, config);
       }
       
+      public void FilterMessage(string firstLine)
+      {
+         try
+         {
+            var expandedPath = Environment.ExpandEnvironmentVariables(Filter.DownloadPath);
+            cw.Info("----------------------------");
+            cw.Highlight(firstLine);
+            StringBuilder message = new StringBuilder();
+            if (Filter.StartDateTime.HasValue)
+            {
+               message.AppendLine($"Start Date:\t{Filter.StartDateTime.Value} [UTC: {Filter.StartDateTimeUtc.Value}]");
+            }
+            if (Filter.EndDateTime.HasValue)
+            {
+               message.AppendLine($"End Date:\t{Filter.EndDateTime.Value} [UTC: {Filter.EndDateTimeUtc.Value}]");
+            }
+            else
+            {
+               message.AppendLine($"End Date:\tCurrent Time");
+            }
+            if (Filter.VideoCount != 10000)
+            {
+               message.AppendLine($"Max downloads:\t{Filter.VideoCount}");
+            }
+            message.AppendLine($"Only Starred:\t{Filter.OnlyStarred}");
+            message.AppendLine($"Snapshots:\t{Filter.Snapshots}");
+            if (!string.IsNullOrWhiteSpace(expandedPath))
+            {
+               message.AppendLine($"Download Path:\t{expandedPath}");
+            }
+            message.AppendLine("----------------------------");
+            cw.Info(message.ToString());
 
+         }
+         catch(Exception)
+         {
+           
+         }
+      }
       internal async Task<Session> Authenicate()
       {
          Session session = null;
@@ -216,50 +255,73 @@ namespace RingVideos
                return -1;
             }
 
-            StringBuilder message = new StringBuilder($"Fetching videos with the following settings:\r\n");
-            if (Filter.StartDateTime.HasValue)
-            {
-               message.AppendLine($"Start Date:\t{Filter.StartDateTime.Value} [UTC: {Filter.StartDateTimeUtc.Value}]");
-            }
-            if (Filter.EndDateTime.HasValue)
-            {
-               message.AppendLine($"End Date:\t{Filter.EndDateTime.Value} [UTC: {Filter.EndDateTimeUtc.Value}]");
-            }
-           
-            if (Filter.VideoCount != 10000)
-            {
-               message.AppendLine($"Max downloads:\t{Filter.VideoCount}");
-            }
-            message.AppendLine($"Only Starred:\t{Filter.OnlyStarred}");
-            message.AppendLine($"Snapshots:\t{Filter.Snapshots}");
-            if (!string.IsNullOrWhiteSpace(expandedPath))
-            {
-               message.AppendLine($"Download Path:\t{expandedPath}");
-            }
 
-            cw.Info(message.ToString());
+
+            this.FilterMessage("Fetching videos with the following settings:");
             if (!Filter.Snapshots)
             {
+               eNt.Devices devices = new();
+               try
+               {
+                  await AnsiConsole.Status()
+                         .StartAsync("Querying for videos to download...", async ctx =>
+                         {
+                            ctx.Spinner(Spinner.Known.Dots2); ;
+                            ctx.SpinnerStyle(Style.Parse("yellow"));
+                            devices = await ringSession.GetRingDevices();
+                            Thread.Sleep(500);
+                         });
+               }
+               catch (Exception exe)
+               {
+                  cw.Error(exe.Message);
+                  log.LogError(exe.ToString());
+                  return -1;
+               }
+
+               DeviceList deviceList = new DeviceList().ExtractDevices(devices);
+               cw.Highlight("Found registered devices:");
+               foreach(var x in deviceList.Devices)
+               {
+                  cw.Info($"{x.Name}\tId: {x.Id}");
+               }
                List<eNt.DoorbotHistoryEvent> dings = new();
-               await AnsiConsole.Status()
-                      .StartAsync("Querying for videos to download...", async ctx => {
-                         ctx.Spinner(Spinner.Known.Dots2); ;
-                         ctx.SpinnerStyle(Style.Parse("yellow"));
-                         dings = await ringSession.GetDoorbotsHistory(Filter.StartDateTimeUtc.Value, Filter.EndDateTimeUtc);
-                         Thread.Sleep(500);
-                      });
+               try
+               {
+                  foreach (var dev in deviceList.Devices)
+                  {
+                     await AnsiConsole.Status()
+                            .StartAsync($"Querying for videos to download from {dev.Name}...", async ctx =>
+                            {
+                               ctx.Spinner(Spinner.Known.Dots2); ;
+                               ctx.SpinnerStyle(Style.Parse("yellow"));
+                               dings.AddRange(await ringSession.GetDoorbotsHistory(Filter.StartDateTimeUtc.Value, Filter.EndDateTimeUtc, dev.Id));
+                               Thread.Sleep(500);
+                            });
+                  }
+               }
+               catch(Exception exe)
+               {
+                  cw.Error(exe.Message);
+                  log.LogError(exe.ToString());
+                  return -1;
+               }
              
                if (Filter.OnlyStarred)
                {
                   dings = dings.Where(d => d.Favorite == true).ToList();
                }
+               dings = dings.OrderBy(d => d.CreatedAtDateTime).ToList();
                string limitmessage = "";
                if(dings.Count() > Filter.VideoCount)
                {
                   limitmessage = $"Will download the first {Filter.VideoCount} based on MaxCount setting";
                }
-               cw.Info($"Found {dings.Count()} videos to download. {limitmessage}");
+               cw.Info("");
+               cw.Highlight($"Found {dings.Count()} videos to download. {limitmessage}");
 
+               //Order by date
+               
                var messages = new List<string>();
 
                List<Task<(bool success, eNt.DoorbotHistoryEvent ding)>> tasks = new();
@@ -271,18 +333,40 @@ namespace RingVideos
                else
                {
                   videoCount = dings.Count;
-               }   
+               }
+
+               var byDevice = dings.Take(videoCount).GroupBy(d => d.Doorbot.Id).ToList();
+               StringBuilder sb = new();
+               foreach(var grp in byDevice)
+               {
+                  var name = deviceList.Devices.Where(d => d.Id == grp.FirstOrDefault().Doorbot.Id).FirstOrDefault().Name;
+                  var count = grp.Count();
+                  var s = "";
+                  if (count > 1)
+                  {
+                     s = "s";
+                  }
+                  sb.Append($"{grp.Count()} video{s} from {name} and ");
+               }
+               if (sb.Length > 4)
+               {
+                  sb.Length = sb.Length - 4;
+                  cw.Info($"Will download {sb.ToString()}");
+               }
+
 
                for (int i = 0; i < videoCount; i++)
                {
                   tasks.Add(SaveRecordingAsync(i + 1, dings[i], Filter));
                }
 
+
+
                results = (await Task.WhenAll(tasks.ToArray())).ToList();
                var success = results.Count(r => r.success == true);
                lastSuccess = results.ToList().Where(r => r.success == true)?.Select(r => r.ding.CreatedAtDateTime).Max();
                failedCount = results.Count(r => r.success == false);
-               cw.Info($"{Environment.NewLine}Successfully downloaded {success} videos");
+               cw.Highlight($"{Environment.NewLine}Successfully downloaded {success} videos");
               
             }
             else
@@ -308,6 +392,7 @@ namespace RingVideos
          catch (Exception exe)
          {
             cw.Error(exe.ToString());
+            log.LogError(exe.ToString());
             return -1;
          }
       }
