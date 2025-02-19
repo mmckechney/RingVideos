@@ -14,25 +14,31 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RingVideos.Models;
+using RingVideos.Writers;
+using Serilog;
 namespace RingVideos
 {
    public class Worker : BackgroundService
    {
       private static string[] StartArgs { get; set; }
+  
+
       private static ILogger<Worker> log;
       private static RingVideoApplication ringApp;
       private static StartArgs sArgs;
       private static IConfiguration config;
       private static CommandHelper cmdHelper;
       private static Parser rootParser;
+      private static ConsoleWriter cw;
 
-      public Worker(ILogger<Worker> log, IConfiguration config, RingVideoApplication ringApp,  StartArgs sArgs, CommandHelper cmdHelper )
+      public Worker(ILogger<Worker> log, IConfiguration config, RingVideoApplication ringApp,  StartArgs sArgs, CommandHelper cmdHelper, ConsoleWriter  consoleWriter)
       {
          Worker.log = log;
          Worker.ringApp = ringApp;
          Worker.sArgs = sArgs;
          Worker.config = config;
          Worker.cmdHelper = cmdHelper;
+         Worker.cw = consoleWriter;
 
       }
       protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -40,27 +46,45 @@ namespace RingVideos
 
          try
          {
-            string[] exitKeywords = ["exit", "quit", "q"];
             rootParser = cmdHelper.SetupCommands();
-            if(Worker.sArgs.Args.Length == 0 ) Worker.sArgs.Args = new string[] { "-h" };
+            bool showFilter = false;
+            if (Worker.sArgs.Args.Length == 0)
+            {
+               Worker.sArgs.Args = new string[] { "-h" };
+               showFilter = true;
+            }
+
             int val = await rootParser.InvokeAsync(Worker.sArgs.Args);
+            //if (showFilter)
+            //{
+            //   ringApp.FilterMessage("Saved filter settings (use command flags to override):");
+            //}
+            if (Worker.sArgs.Args.Contains("-x") || Worker.sArgs.Args.Contains("--exit"))
+            {
+               Environment.Exit(val);
+            }
+            showFilter = false;
             while (true)
             {
+               ringApp.FilterMessage("Saved filter settings (use command flags to override):");
                Console.ForegroundColor = ConsoleColor.White;
                Console.WriteLine();
                Console.Write("RingVideos> ");
                var line = Console.ReadLine();
 
-               if (line == null || (line.Length == 1 && exitKeywords.Contains(line.Trim().ToLower())))
+               if (line.Length == 0)
                {
-                  return;
+                  line = "-h";
+                  showFilter = true;
                }
-
-               if (line.Length == 0) line = "-h";
 
                try
                {
                   val = await rootParser.InvokeAsync(line);
+                  //if (showFilter)
+                  //{
+                  //   ringApp.FilterMessage("Saved filter settings (use command flags to override):");
+                  //}
                }
                catch (Exception exe)
                {
@@ -118,6 +142,8 @@ namespace RingVideos
          if (!string.IsNullOrEmpty(password))
          {
             ringApp.Auth.ClearTextPassword = password;
+            ringApp.Auth.ClearTextRefreshToken = "";
+            ringApp.Auth.RefreshToken = "";
          }
          if (!string.IsNullOrEmpty(path))
          {
@@ -139,32 +165,25 @@ namespace RingVideos
          ringApp.Filter.OnlyStarred = starred;
          ringApp.Filter.Snapshots = snapshot;
      
-         if (maxcount != 1000)
+         if (maxcount != 0)
          {
             ringApp.Filter.VideoCount = maxcount;
          }
-         if (ringApp.Filter.StartDateTime.HasValue)
-         {
-            ringApp.Filter.StartDateTimeUtc = TimeZoneInfo.ConvertTimeToUtc(ringApp.Filter.StartDateTime.Value, TimeZoneInfo.Local);
-         }
-         else
-         {
+         if (!ringApp.Filter.StartDateTime.HasValue)
+         { 
             ringApp.Filter.StartDateTime = DateTime.MinValue;
-            ringApp.Filter.StartDateTimeUtc = DateTime.MinValue;
          }
-         if (ringApp.Filter.EndDateTime.HasValue)
-         {
-            ringApp.Filter.EndDateTimeUtc = TimeZoneInfo.ConvertTimeToUtc(ringApp.Filter.EndDateTime.Value, TimeZoneInfo.Local);
-         }
-         else
+         if (!ringApp.Filter.EndDateTime.HasValue)
          {
             ringApp.Filter.EndDateTime = DateTime.MaxValue;
-            ringApp.Filter.EndDateTimeUtc = DateTime.MaxValue;
          }
       }
          
      
-
+      public static void QuitApplication()
+      {
+         Environment.Exit(0);
+      }
       private static bool SetAuthenticationValues()
       {
          if (string.IsNullOrWhiteSpace(ringApp.Auth.UserName))
@@ -205,5 +224,40 @@ namespace RingVideos
          return true;
       }
 
+      internal static void ShowLog(object t)
+      {
+         var folder = Path.GetDirectoryName(Program.logFileBaseName);
+         var fileRoot = Path.GetFileNameWithoutExtension(Program.logFileBaseName);
+         var dirInf = new DirectoryInfo(folder);
+         var currentLogFile = dirInf.GetFiles($"{fileRoot}*.log").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
+
+
+         cw.Warning($"Log file can be found here: {currentLogFile}");
+         cw.Info("Last 100 lines from log file:");
+         cw.Info("");
+
+         try
+         {
+            string filecontent;
+            using (FileStream fileStream = new FileStream(currentLogFile.FullName,FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (StreamReader reader = new StreamReader(fileStream))
+            {
+               filecontent = reader.ReadToEnd();
+            }
+            var lines = filecontent.Split(Environment.NewLine);
+            var last100 = lines.Skip(Math.Max(0, lines.Count()) - 100);
+            foreach (var line in last100)
+            {
+               cw.Info(line);
+            }
+
+         }
+         catch (Exception exe)
+         {
+            cw.Error(exe.Message);
+            log.LogError(exe.ToString());
+         }
+
+      }
    }
 }

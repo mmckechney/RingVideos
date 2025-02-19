@@ -25,6 +25,9 @@ namespace RingVideos.Writers
             var maxLine = GetMaxLineWriterLine();
             switch (msgType)
             {
+               case MessageType.Highlight:
+                  Console.ForegroundColor = ConsoleColor.Cyan;
+                  break;
                case MessageType.Warning:
                   Console.ForegroundColor = ConsoleColor.Yellow;
                   break;
@@ -68,6 +71,11 @@ namespace RingVideos.Writers
       {
          WriteMessage(message, MessageType.Warning);
          log.LogWarning(message);
+      }
+      public void Highlight(string message)
+      {
+         WriteMessage(message, MessageType.Highlight);
+         log.LogInformation(message);
       }
       public void Info(string message)
       {
@@ -130,6 +138,9 @@ namespace RingVideos.Writers
             Console.Write($"{lw.InitialMessage}  ");
             switch (msgType)
             {
+               case MessageType.Highlight:
+                  Console.ForegroundColor = ConsoleColor.Cyan;
+                  break;
                case MessageType.Warning:
                   Console.ForegroundColor = ConsoleColor.Yellow;
                   break;
