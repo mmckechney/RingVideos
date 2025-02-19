@@ -209,6 +209,10 @@ namespace RingVideos
             {
                cw.Error($"{e.Message}: Connection failed, please validate your credentials.");
             }
+            catch(Exception exe)
+            {
+               cw.Error($"{exe.Message}");
+            }
          }
 
          if (session != null && session.OAuthToken != null)
@@ -260,30 +264,14 @@ namespace RingVideos
             this.FilterMessage("Fetching videos with the following settings:");
             if (!Filter.Snapshots)
             {
-               eNt.Devices devices = new();
-               try
+               DeviceList deviceList = new();
+               if (Filter.DeviceId.HasValue && Filter.DeviceId.Value > 0)
                {
-                  await AnsiConsole.Status()
-                         .StartAsync("Querying for videos to download...", async ctx =>
-                         {
-                            ctx.Spinner(Spinner.Known.Dots2); ;
-                            ctx.SpinnerStyle(Style.Parse("yellow"));
-                            devices = await ringSession.GetRingDevices();
-                            Thread.Sleep(500);
-                         });
+                  deviceList.Devices.Add(new DeviceInfo() { Id = Filter.DeviceId.Value });
                }
-               catch (Exception exe)
+               else
                {
-                  cw.Error(exe.Message);
-                  log.LogError(exe.ToString());
-                  return -1;
-               }
-
-               DeviceList deviceList = new DeviceList().ExtractDevices(devices);
-               cw.Highlight("Found registered devices:");
-               foreach(var x in deviceList.Devices)
-               {
-                  cw.Info($"{x.Name}\tId: {x.Id}");
+                  deviceList = await GetDevicesList();
                }
                List<eNt.DoorbotHistoryEvent> dings = new();
                try
@@ -337,21 +325,24 @@ namespace RingVideos
 
                var byDevice = dings.Take(videoCount).GroupBy(d => d.Doorbot.Id).ToList();
                StringBuilder sb = new();
-               foreach(var grp in byDevice)
+               if (!Filter.DeviceId.HasValue)
                {
-                  var name = deviceList.Devices.Where(d => d.Id == grp.FirstOrDefault().Doorbot.Id).FirstOrDefault().Name;
-                  var count = grp.Count();
-                  var s = "";
-                  if (count > 1)
+                  foreach (var grp in byDevice)
                   {
-                     s = "s";
+                     var name = deviceList.Devices.Where(d => d.Id == grp.FirstOrDefault().Doorbot.Id).FirstOrDefault().Name;
+                     var count = grp.Count();
+                     var s = "";
+                     if (count > 1)
+                     {
+                        s = "s";
+                     }
+                     sb.Append($"{grp.Count()} video{s} from {name} and ");
                   }
-                  sb.Append($"{grp.Count()} video{s} from {name} and ");
-               }
-               if (sb.Length > 4)
-               {
-                  sb.Length = sb.Length - 4;
-                  cw.Info($"Will download {sb.ToString()}");
+                  if (sb.Length > 4)
+                  {
+                     sb.Length = sb.Length - 4;
+                     cw.Info($"Will download {sb.ToString()}");
+                  }
                }
 
 
@@ -512,5 +503,42 @@ namespace RingVideos
          }
       }
 
+      internal async Task<DeviceList> GetDevicesList(string username = "", string password = "")
+      {
+         if (this.ringSession == null)
+         {
+            this.Auth.UserName = username;
+            this.Auth.ClearTextPassword = password;
+            this.ringSession = await Authenicate();
+         }
+
+         eNt.Devices devices = new();
+         try
+         {
+            await AnsiConsole.Status()
+                   .StartAsync("Getting list of registered devices...", async ctx =>
+                   {
+                      ctx.Spinner(Spinner.Known.Dots2); ;
+                      ctx.SpinnerStyle(Style.Parse("yellow"));
+                      devices = await ringSession.GetRingDevices();
+                      Thread.Sleep(500);
+                   });
+         }
+         catch (Exception exe)
+         {
+            cw.Error(exe.Message);
+            log.LogError(exe.ToString());
+            return null;
+         }
+
+         DeviceList deviceList = new DeviceList().ExtractDevices(devices);
+         cw.Highlight("Found registered devices:");
+         foreach (var x in deviceList.Devices)
+         {
+            cw.Info($"{x.Name}\tId: {x.Id}");
+         }
+
+         return deviceList;
+      }
    }
 }

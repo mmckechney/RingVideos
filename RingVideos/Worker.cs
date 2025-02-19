@@ -103,23 +103,23 @@ namespace RingVideos
      
 
 
-      public static async Task<int> GetSnapshotImages(string username, string password, string path, DateTime start, DateTime end)
+      public static async Task<int> GetSnapshotImages(string username, string password, string path, DateTime start, DateTime end, long? deviceId)
       {
-         return await GetVideos(username, password, path, start, end, false, true, 1000);
+         return await GetVideos(username, password, path, start, end, false, true, 1000, deviceId);
       }
 
-      public static async Task<int> GetAllVideos(string username, string password, string path, DateTime start, DateTime end, int maxcount)
+      public static async Task<int> GetAllVideos(string username, string password, string path, DateTime start, DateTime end, int maxcount, long? deviceId)
       {
-         return await GetVideos(username, password, path, start, end, false, false, maxcount);
+         return await GetVideos(username, password, path, start, end, false, false, maxcount, deviceId);
       }
-      public static async Task<int> GetStarredVideos(string username, string password, string path, DateTime start, DateTime end, int maxcount)
+      public static async Task<int> GetStarredVideos(string username, string password, string path, DateTime start, DateTime end, int maxcount, long? deviceId)
       {
-         return await GetVideos(username, password, path, start, end, true, false, maxcount);
+         return await GetVideos(username, password, path, start, end, true, false, maxcount, deviceId);
       }
-      private static async Task<int> GetVideos(string username, string password, string path, DateTime start, DateTime end, bool starred, bool snapshot, int maxcount)
+      private static async Task<int> GetVideos(string username, string password, string path, DateTime start, DateTime end, bool starred, bool snapshot, int maxcount, long? deviceId)
       {
 
-         SetFilterAndAuthValues(username, password, path, start, end, starred, snapshot, maxcount);
+         SetFilterAndAuthValues(username, password, path, start, end, starred, snapshot, maxcount, deviceId);
 
          if (SetAuthenticationValues())
          {
@@ -133,7 +133,7 @@ namespace RingVideos
 
       }
      
-      private static void SetFilterAndAuthValues(string username, string password, string path, DateTime start, DateTime end, bool starred, bool snapshot, int maxcount)
+      private static void SetFilterAndAuthValues(string username, string password, string path, DateTime start, DateTime end, bool starred, bool snapshot, int maxcount, long? deviceId)
       {
          if (!string.IsNullOrEmpty(username))
          {
@@ -176,6 +176,10 @@ namespace RingVideos
          if (!ringApp.Filter.EndDateTime.HasValue)
          {
             ringApp.Filter.EndDateTime = DateTime.MaxValue;
+         }
+         if(deviceId.HasValue && deviceId.Value > 0)
+         {
+            ringApp.Filter.DeviceId = deviceId;
          }
       }
          
@@ -258,6 +262,11 @@ namespace RingVideos
             log.LogError(exe.ToString());
          }
 
+      }
+
+      internal static async Task DeviceList(string username, string password)
+      {
+         await ringApp.GetDevicesList(username, password);
       }
    }
 }

@@ -52,6 +52,8 @@ namespace RingVideos.Models
       public DateTime? SnapshotsStartDateTime { get; set; }
       public DateTime? SnapshotsEndDateTime { get; set; } = DateTime.Today.AddDays(1).AddSeconds(-1);
 
+      public long? DeviceId { get; set; }
+
    }
 
    internal class Config
