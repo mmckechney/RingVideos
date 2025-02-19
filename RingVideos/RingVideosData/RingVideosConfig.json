@@ -1,0 +1,18 @@
+{
+  "Authentication": {
+    "UserName": "michael@mckechney.com",
+    "Password": "W2IBoO3evceiZH2dktOPW//iz86adtjkgXwnuThR0bM=",
+    "RefreshToken": "DlVGuKDk5S73pvvqoz67WFBR6xkFY39Z3YGd3iNBjVEkjEItew\u002Biu\u002BotuGtlGny75ZF6ETtAWEGrbMLJPhwGJ\u002BLKoeqS1Z1Dwxcm3imZhd2sgT4MDbGF/x2C4hOLva2sizWGPAI1sdjMR1HLR35Wnsq2kVgYrk5EXFKz293tclbue4JWkc0Z8di3zPoprPtrG/QbI2ZvqYiQdRuvrcKOQqEjdR9qTUEB3U7vT4DyrfYr2XTw3L9XD7wNBw10c9cYWXY4LMlTglRzWZD3Ue\u002BRJgdTyq3Qc3cKQRSWlcjF1dVozmGwceVXIeogMlGO7jomeRlmd0WhUNLCmE7mIOrAdScmWF0gYOgNJA3vB5QAnolpmAjmZNqWWIN8mLs\u002BxU991o8xIX3MOtJJy5YPvQoM1BqUGuPB6zG8l5XsdhWOzL53/I5os44HpBakNg8MpiMQ\u002BeS7Wl53I97V/fK57/Q7bJ2lDMCYEteZyAYmH0W\u002B1nC7zQbjD3ojKNW/Eulsb0v6x2H6O\u002B0abBZsOPbFmZj31l\u002B7mfxqXh\u002BgCGV8cNSWuwP5eMGm22afaCCLVn6sOC5SDc6AVM9c/MWRcz/iFa/C5DlfTmFBwESvJBvTEOmPveRIpQl\u002BHbH6k2yn1Ju2MW\u002B9u7XO3HOcUo7DmPYCpMkVD7Hw4qukXmTaYmeHDjnw2XM8U4CNsllBbVjtDmuoztTjAcXvl06wigbBeqlUJY3GJeNO4y0ZsMoz8OH298mf3hA2MjJG2VJommPW\u002BOvd6ZFR/W3rq61FzEoMbUTj1TwwcLKw/cPjtS/OKaS0g1GRXkWMcaVEW87bGMYbZpHChqxG/RH1IozERIudmFcgcv218ogNYdUdBCnU91kNlSUW1kMgc/QR6InNFx5DnTkAVC8NgEtS9tLRlPz25oGRcLe4oywODqSsXecyX2waaWGHthG9e5Dw5P4YdHX4vv\u002Bcwe0ixEAuMNYA45eXY\u002BMk00qCZwrNoi2e8A6VNfLFHXtqjtevZdg6GB0HX5ESTtsEkBjQHTz/nofUZ1NhODHCaczVuIbyE1skB74qKRIzyWyixUWnx/j8UXpSRNJsWd\u002BZa2JI",
+    "EncryptionIV": "LFWtSivhp590lQE7d5IQaA=="
+  },
+  "Filter": {
+    "VideoCount": 1000,
+    "StartDateTime": "2025-02-19T13:19:50.956-05:00",
+    "EndDateTime": null,
+    "DownloadPath": ".",
+    "TimeZone": null,
+    "SetDebug": false,
+    "SnapshotsStartDateTime": null,
+    "SnapshotsEndDateTime": "2025-02-19T23:59:59-05:00"
+  }
+}
