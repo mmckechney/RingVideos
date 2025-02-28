@@ -117,6 +117,7 @@ namespace RingVideos.Writers
       {
          try
          {
+            if (lw.LinePosition < 0) lw.LinePosition = 0;
             Monitor.Enter(lockObj);
             Console.SetCursorPosition(0, lw.LinePosition);
             Console.Write(message);
@@ -134,6 +135,7 @@ namespace RingVideos.Writers
             Monitor.Enter(lockObj);
             //Console.SetCursorPosition(0, lw.LinePosition);
             //Console.Write(new string(' ', Console.WindowWidth));
+            if(lw.LinePosition < 0) lw.LinePosition = 0;
             Console.SetCursorPosition(0, lw.LinePosition);
             Console.Write($"{lw.InitialMessage}  ");
             switch (msgType)
