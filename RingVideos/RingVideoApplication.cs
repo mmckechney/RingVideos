@@ -233,11 +233,12 @@ namespace RingVideos
             int failedCount = 0;
             List<(bool success, eNt.DoorbotHistoryEvent ding)> results = new();
             this.ringSession = await Authenicate();
-            this.Auth.ClearTextRefreshToken = this.ringSession.OAuthToken.RefreshToken;
             if (this.ringSession == null || !this.ringSession.IsAuthenticated)
             {
+               cw.Error("Authentication failed. Please check your credentials.");
                return 999;
             }
+            this.Auth.ClearTextRefreshToken = this.ringSession.OAuthToken.RefreshToken;
 
             if (Filter.DownloadPath == null)
             {
@@ -507,8 +508,16 @@ namespace RingVideos
       {
          if (this.ringSession == null)
          {
-            this.Auth.UserName = username;
-            this.Auth.ClearTextPassword = password;
+            if (!string.IsNullOrEmpty(username))
+            {
+               this.Auth.UserName = username;
+            }
+            if (!string.IsNullOrEmpty(password))
+            {
+               this.Auth.ClearTextPassword = password;
+               this.Auth.ClearTextRefreshToken = "";
+               this.Auth.RefreshToken = "";
+            }
             this.ringSession = await Authenicate();
          }
 

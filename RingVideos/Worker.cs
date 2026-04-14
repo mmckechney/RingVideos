@@ -29,8 +29,9 @@ namespace RingVideos
       private static CommandHelper cmdHelper;
       private static RootCommand rootCommand;
       private static ConsoleWriter cw;
+      private static IHostApplicationLifetime appLifetime;
 
-      public Worker(ILogger<Worker> log, IConfiguration config, RingVideoApplication ringApp,  StartArgs sArgs, CommandHelper cmdHelper, ConsoleWriter  consoleWriter)
+      public Worker(ILogger<Worker> log, IConfiguration config, RingVideoApplication ringApp,  StartArgs sArgs, CommandHelper cmdHelper, ConsoleWriter  consoleWriter, IHostApplicationLifetime appLifetime)
       {
          Worker.log = log;
          Worker.ringApp = ringApp;
@@ -38,6 +39,7 @@ namespace RingVideos
          Worker.config = config;
          Worker.cmdHelper = cmdHelper;
          Worker.cw = consoleWriter;
+         Worker.appLifetime = appLifetime;
 
       }
       protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -60,7 +62,8 @@ namespace RingVideos
             //}
             if (Worker.sArgs.Args.Contains("-x") || Worker.sArgs.Args.Contains("--exit"))
             {
-               Environment.Exit(val);
+               appLifetime.StopApplication();
+               return;
             }
             showFilter = false;
             while (true)
@@ -185,7 +188,7 @@ namespace RingVideos
      
       public static void QuitApplication()
       {
-         Environment.Exit(0);
+         appLifetime.StopApplication();
       }
       private static bool SetAuthenticationValues()
       {

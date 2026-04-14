@@ -95,7 +95,6 @@ namespace RingVideos
          rootCommand.Add(snapshotCommand);
          rootCommand.Add(showLogCommand);
          rootCommand.Add(deviceListCommand);
-         rootCommand.Add(exitAppOption);
          rootCommand.Add(quitCommand);
 
          starCommand.Add(userNameOption);
@@ -105,6 +104,7 @@ namespace RingVideos
          starCommand.Add(endOption);
          starCommand.Add(maxcountOption);
          starCommand.Add(deviceIdOption);
+         starCommand.Add(exitAppOption);
 
          allCommand.Add(userNameOption);
          allCommand.Add(passwordOption);
@@ -113,6 +113,7 @@ namespace RingVideos
          allCommand.Add(endOption);
          allCommand.Add(maxcountOption);
          allCommand.Add(deviceIdOption);
+         allCommand.Add(exitAppOption);
 
          snapshotCommand.Add(userNameOption);
          snapshotCommand.Add(passwordOption);
@@ -120,6 +121,9 @@ namespace RingVideos
          snapshotCommand.Add(startOption);
          snapshotCommand.Add(endOption);
          snapshotCommand.Add(deviceIdOption);
+         snapshotCommand.Add(exitAppOption);
+
+         deviceListCommand.Add(exitAppOption);
 
          return rootCommand;
       }

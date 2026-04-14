@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -72,7 +72,7 @@ namespace KoenZomers.Ring.Api
         /// <param name="bearerToken">Bearer token to authenticate the request with. Leave out to not authenticate the session.</param>
         /// <returns>Contents of the result returned by the webserver</returns>
         /// <exception cref="Exceptions.ThrottledException">Thrown when the web server indicates too many requests have been made (HTTP 429).</exception>
-        public async Task<string> GetContents(Uri url, string bearerToken = null)
+        public async Task<string> GetContents(Uri url, string bearerToken = null, string hardwareId = null)
         {
             // Construct the request
             var request = new HttpRequestMessage
@@ -85,6 +85,13 @@ namespace KoenZomers.Ring.Api
             if (!string.IsNullOrEmpty(bearerToken))
             {
                 request.Headers.Add(HttpRequestHeader.Authorization.ToString(), $"Bearer {bearerToken}");
+            }
+
+            request.Headers.TryAddWithoutValidation("User-Agent", "android:com.ringapp");
+
+            if (!string.IsNullOrEmpty(hardwareId))
+            {
+                request.Headers.Add("hardware_id", hardwareId);
             }
 
             // Send the request to the webserver
@@ -101,7 +108,107 @@ namespace KoenZomers.Ring.Api
 
             // Return the response from the server
             var responseFromServer = await response.Content.ReadAsStringAsync();
+
             return responseFromServer;
+        }
+
+        /// <summary>
+        /// Sends a POST request for OAuth authentication with Basic Auth credentials
+        /// </summary>
+        /// <param name="url">Url to POST to</param>
+        /// <param name="formFields">Dictionary with key/value pairs to send as form-encoded body</param>
+        /// <param name="headerFields">NameValueCollection with the fields to add to the header sent to the server with the request</param>
+        /// <returns>The website contents returned by the webserver after posting the data</returns>
+        /// <exception cref="Exceptions.ThrottledException">Thrown when the web server indicates too many requests have been made (HTTP 429).</exception>
+        /// <exception cref="Exceptions.TwoFactorAuthenticationIncorrectException">Thrown when the web server indicates the two-factor code was incorrect (HTTP 400).</exception>
+        /// <exception cref="Exceptions.TwoFactorAuthenticationRequiredException">Thrown when the web server indicates two-factor authentication is required (HTTP 412).</exception>
+        public async Task<string> OAuthPost(Uri url, Dictionary<string, string> formFields, NameValueCollection headerFields)
+        {
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = url
+            };
+
+            if (headerFields != null)
+            {
+                foreach (string headerField in headerFields)
+                {
+                    request.Headers.Add(headerField, headerFields[headerField]);
+                }
+            }
+
+            request.Headers.TryAddWithoutValidation("User-Agent", "android:com.ringapp");
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            var json = JsonSerializer.Serialize(formFields);
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.SendAsync(request);
+
+            if (response == null) return null;
+
+            var responseText = await response.Content.ReadAsStringAsync();
+
+            switch (response.StatusCode)
+            {
+                case HttpStatusCode.BadRequest:
+                    if (responseText.Contains("Too many requests", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        throw new Exceptions.ThrottledException();
+                    }
+                    if (responseText.Contains("Verification Code is invalid or expired", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        throw new Exceptions.TwoFactorAuthenticationIncorrectException();
+                    }
+                    break;
+
+                case HttpStatusCode.PreconditionFailed:
+                    throw new Exceptions.TwoFactorAuthenticationRequiredException();
+
+                case HttpStatusCode.Unauthorized:
+                    throw new Exceptions.AuthenticationFailedException();
+
+                default:
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new Exceptions.AuthenticationFailedException($"Ring API returned HTTP {(int)response.StatusCode} ({response.StatusCode}): {responseText}");
+                    }
+                    break;
+            }
+
+            if (responseText == null) return null;
+            return responseText;
+        }
+
+        /// <summary>
+        /// Sends a POST request with a raw JSON body string
+        /// </summary>
+        public async Task<string> JsonPostRaw(Uri url, string jsonBody, NameValueCollection headerFields)
+        {
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = url
+            };
+
+            if (headerFields != null)
+            {
+                foreach (string headerField in headerFields)
+                {
+                    request.Headers.TryAddWithoutValidation(headerField, headerFields[headerField]);
+                }
+            }
+
+            request.Headers.TryAddWithoutValidation("User-Agent", "android:com.ringapp");
+
+            request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.SendAsync(request);
+            if (response == null) return null;
+
+            var responseText = await response.Content.ReadAsStringAsync();
+            return responseText;
         }
 
         /// <summary>
@@ -132,7 +239,10 @@ namespace KoenZomers.Ring.Api
             }
 
             // Always add the User-Agent header
-            request.Headers.UserAgent.TryParseAdd("android:com.ringapp");
+            request.Headers.TryAddWithoutValidation("User-Agent", "android:com.ringapp");
+
+            // Add Accept header for JSON responses
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             // Set the content for the HTTP request
             request.Content = new FormUrlEncodedContent(formFields);
@@ -168,6 +278,13 @@ namespace KoenZomers.Ring.Api
 
                 case HttpStatusCode.Unauthorized:
                     throw new Exceptions.AuthenticationFailedException();
+
+                default:
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new Exceptions.AuthenticationFailedException($"Ring API returned HTTP {(int)response.StatusCode} ({response.StatusCode}): {responseText}");
+                    }
+                    break;
             }
 
             // Make sure the response content is available

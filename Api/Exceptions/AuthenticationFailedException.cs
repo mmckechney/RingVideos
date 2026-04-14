@@ -11,6 +11,10 @@ namespace KoenZomers.Ring.Api.Exceptions
         {
         }
 
+        public AuthenticationFailedException(string message) : base(message)
+        {
+        }
+
         public AuthenticationFailedException(Exception innerException) : base("Authentication of the session failed", innerException)
         {
         }
