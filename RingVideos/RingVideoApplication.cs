@@ -46,7 +46,7 @@ namespace RingVideos
          {
             ReadSettings();
          }
-         catch(Exception exe)
+         catch(Exception)
          {
             cw.Warning("Failed to load saved settings");
          }
@@ -62,7 +62,7 @@ namespace RingVideos
             this.Auth = settings.Authentication.Decrypt();
             this.Filter = settings.Filter;
          }
-         catch(Exception exe)
+         catch(Exception)
          {
             var tmpAuth = config.GetSection("Authentication").Get<Authentication>();
             if (tmpAuth != null)
@@ -137,6 +137,15 @@ namespace RingVideos
                message.AppendLine($"Max downloads:\t{Filter.VideoCount}");
             }
             message.AppendLine($"Only Starred:\t{Filter.OnlyStarred}");
+            message.AppendLine($"Only Person:\t{Filter.OnlyPersonDetected}");
+            if (!string.IsNullOrWhiteSpace(Filter.Kind))
+            {
+               message.AppendLine($"Event Kind:\t{Filter.Kind}");
+            }
+            if (!string.IsNullOrWhiteSpace(Filter.DetectionType))
+            {
+               message.AppendLine($"Detection:\t{Filter.DetectionType}");
+            }
             message.AppendLine($"Snapshots:\t{Filter.Snapshots}");
             if (!string.IsNullOrWhiteSpace(expandedPath))
             {
@@ -168,7 +177,7 @@ namespace RingVideos
                       Thread.Sleep(500);
                    });
             }
-            catch(Exception exe)
+            catch(Exception)
             {
                cw.Error("Failed to authenticate with refresh token");
             }
@@ -300,6 +309,28 @@ namespace RingVideos
                {
                   dings = dings.Where(d => d.Favorite == true).ToList();
                }
+               if (Filter.OnlyPersonDetected)
+               {
+                  dings = dings.Where(d => d.CvProperties != null &&
+                                           (d.CvProperties.PersonDetected == true ||
+                                            string.Equals(d.CvProperties.DetectionType, "human", StringComparison.OrdinalIgnoreCase))).ToList();
+               }
+               if (!string.IsNullOrWhiteSpace(Filter.DetectionType))
+               {
+                  var detType = Filter.DetectionType.Trim();
+                  dings = dings.Where(d => d.CvProperties != null &&
+                                           (string.Equals(d.CvProperties.DetectionType, detType, StringComparison.OrdinalIgnoreCase) ||
+                                            (string.Equals(detType, "human", StringComparison.OrdinalIgnoreCase) && d.CvProperties.PersonDetected == true))).ToList();
+               }
+               if (!string.IsNullOrWhiteSpace(Filter.Kind))
+               {
+                  var kind = Filter.Kind.Trim();
+                  dings = dings.Where(d => string.Equals(d.Kind, kind, StringComparison.OrdinalIgnoreCase)).ToList();
+               }
+               // Skip events that do not have a ready recording — snapshot/live-view events and
+               // in-progress recordings would otherwise fail when attempting to download.
+               dings = dings.Where(d => d.Recording != null &&
+                                        string.Equals(d.Recording.Status, "ready", StringComparison.OrdinalIgnoreCase)).ToList();
                dings = dings.OrderBy(d => d.CreatedAtDateTime).ToList();
                string limitmessage = "";
                if(dings.Count() > Filter.VideoCount)

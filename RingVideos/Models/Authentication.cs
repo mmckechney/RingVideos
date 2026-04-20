@@ -30,11 +30,14 @@ namespace RingVideos.Models
             {
                 using (Aes myAes = Aes.Create())
                 {
-#pragma warning disable SYSLIB0041 // Type or member is obsolete
-               var derived =  new Rfc2898DeriveBytes(Encoding.ASCII.GetBytes(this.Key), Encoding.ASCII.GetBytes(this.salt), 100);
-#pragma warning restore SYSLIB0041 // Type or member is obsolete
-               myAes.GenerateIV();
-                    myAes.Key = derived.GetBytes(32);
+                    var derivedKey = Rfc2898DeriveBytes.Pbkdf2(
+                        Encoding.ASCII.GetBytes(this.Key),
+                        Encoding.ASCII.GetBytes(this.salt),
+                        100,
+                        HashAlgorithmName.SHA1,
+                        32);
+                    myAes.GenerateIV();
+                    myAes.Key = derivedKey;
                     this.EncryptionIV =  Convert.ToBase64String(myAes.IV);
 
                     ICryptoTransform encryptor = myAes.CreateEncryptor(myAes.Key, myAes.IV);
@@ -90,10 +93,13 @@ namespace RingVideos.Models
                     {
                         myAes.IV = Convert.FromBase64String(this.EncryptionIV);
                     }
-#pragma warning disable SYSLIB0041 // Type or member is obsolete
-               var derived = new Rfc2898DeriveBytes(Encoding.ASCII.GetBytes(this.Key), Encoding.ASCII.GetBytes(this.salt), 100);
-#pragma warning restore SYSLIB0041 // Type or member is obsolete
-               myAes.Key = derived.GetBytes(32);
+                    var derivedKey = Rfc2898DeriveBytes.Pbkdf2(
+                        Encoding.ASCII.GetBytes(this.Key),
+                        Encoding.ASCII.GetBytes(this.salt),
+                        100,
+                        HashAlgorithmName.SHA1,
+                        32);
+                    myAes.Key = derivedKey;
                     // Create a decryptor to perform the stream transform.
                     ICryptoTransform decryptor = myAes.CreateDecryptor(myAes.Key, myAes.IV);
                     var passwordBytes = Convert.FromBase64String(this.Password);

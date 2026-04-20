@@ -10,7 +10,6 @@ namespace RingVideos.Models
       public DateTime? StartDateTime { get; set; }
       public DateTime? EndDateTime { get; set; } = DateTime.Today.AddDays(1).AddSeconds(-1);
 
-      private DateTime? _startDateTimeUtc = null;
       [JsonIgnore]
       public DateTime? StartDateTimeUtc
       {
@@ -46,6 +45,18 @@ namespace RingVideos.Models
       public string TimeZone { get; set; }
       [JsonIgnore]
       public bool OnlyStarred { get; set; } = false;
+      [JsonIgnore]
+      public bool OnlyPersonDetected { get; set; } = false;
+      /// <summary>
+      /// When set, only download events of this kind (e.g. "motion", "ding", "on_demand", "alarm").
+      /// </summary>
+      [JsonIgnore]
+      public string Kind { get; set; }
+      /// <summary>
+      /// When set, only download events whose Ring CV detection_type matches (e.g. "human", "vehicle", "animal", "package", "other_motion").
+      /// </summary>
+      [JsonIgnore]
+      public string DetectionType { get; set; }
       public bool SetDebug { get; set; } = false;
       [JsonIgnore]
       public bool Snapshots { get; set; } = false;

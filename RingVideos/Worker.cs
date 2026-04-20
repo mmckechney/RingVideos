@@ -30,6 +30,7 @@ namespace RingVideos
       private static RootCommand rootCommand;
       private static ConsoleWriter cw;
       private static IHostApplicationLifetime appLifetime;
+      private static bool quitRequested = false;
 
       public Worker(ILogger<Worker> log, IConfiguration config, RingVideoApplication ringApp,  StartArgs sArgs, CommandHelper cmdHelper, ConsoleWriter  consoleWriter, IHostApplicationLifetime appLifetime)
       {
@@ -48,52 +49,57 @@ namespace RingVideos
          try
          {
             rootCommand = cmdHelper.SetupCommands();
-            bool showFilter = false;
             if (Worker.sArgs.Args.Length == 0)
             {
                Worker.sArgs.Args = new string[] { "-h" };
-               showFilter = true;
             }
 
             int val = await rootCommand.Parse(Worker.sArgs.Args).InvokeAsync();
-            //if (showFilter)
-            //{
-            //   ringApp.FilterMessage("Saved filter settings (use command flags to override):");
-            //}
             if (Worker.sArgs.Args.Contains("-x") || Worker.sArgs.Args.Contains("--exit"))
             {
                appLifetime.StopApplication();
                return;
             }
-            showFilter = false;
             while (true)
             {
+               if (quitRequested || stoppingToken.IsCancellationRequested)
+               {
+                  break;
+               }
                ringApp.FilterMessage("Saved filter settings (use command flags to override):");
                Console.ForegroundColor = ConsoleColor.White;
                Console.WriteLine();
                Console.Write("RingVideos> ");
                var line = Console.ReadLine();
 
+               if (line == null)
+               {
+                  // stdin closed (e.g. Ctrl+Z / piped input ended) — exit gracefully
+                  break;
+               }
+
                if (line.Length == 0)
                {
                   line = "-h";
-                  showFilter = true;
                }
 
                try
                {
                   val = await rootCommand.Parse(line).InvokeAsync();
-                  //if (showFilter)
-                  //{
-                  //   ringApp.FilterMessage("Saved filter settings (use command flags to override):");
-                  //}
                }
                catch (Exception exe)
                {
                   if (exe.Message != "Nullable object must have a value.") 
                      log.LogError($"❌ Failed to run command: {exe.Message}");
                }
+
+               if (quitRequested)
+               {
+                  break;
+               }
             }
+
+            appLifetime.StopApplication();
      
          }
          catch(Exception exe)
@@ -107,21 +113,21 @@ namespace RingVideos
 
       public static async Task<int> GetSnapshotImages(string username, string password, string path, DateTime start, DateTime end, long? deviceId)
       {
-         return await GetVideos(username, password, path, start, end, false, true, 1000, deviceId);
+         return await GetVideos(username, password, path, start, end, false, false, null, null, true, 1000, deviceId);
       }
 
-      public static async Task<int> GetAllVideos(string username, string password, string path, DateTime start, DateTime end, int maxcount, long? deviceId)
+      public static async Task<int> GetAllVideos(string username, string password, string path, DateTime start, DateTime end, int maxcount, long? deviceId, bool personOnly, string kind, string detectionType)
       {
-         return await GetVideos(username, password, path, start, end, false, false, maxcount, deviceId);
+         return await GetVideos(username, password, path, start, end, false, personOnly, kind, detectionType, false, maxcount, deviceId);
       }
-      public static async Task<int> GetStarredVideos(string username, string password, string path, DateTime start, DateTime end, int maxcount, long? deviceId)
+      public static async Task<int> GetStarredVideos(string username, string password, string path, DateTime start, DateTime end, int maxcount, long? deviceId, bool personOnly, string kind, string detectionType)
       {
-         return await GetVideos(username, password, path, start, end, true, false, maxcount, deviceId);
+         return await GetVideos(username, password, path, start, end, true, personOnly, kind, detectionType, false, maxcount, deviceId);
       }
-      private static async Task<int> GetVideos(string username, string password, string path, DateTime start, DateTime end, bool starred, bool snapshot, int maxcount, long? deviceId)
+      private static async Task<int> GetVideos(string username, string password, string path, DateTime start, DateTime end, bool starred, bool personOnly, string kind, string detectionType, bool snapshot, int maxcount, long? deviceId)
       {
 
-         SetFilterAndAuthValues(username, password, path, start, end, starred, snapshot, maxcount, deviceId);
+         SetFilterAndAuthValues(username, password, path, start, end, starred, personOnly, kind, detectionType, snapshot, maxcount, deviceId);
 
          if (SetAuthenticationValues())
          {
@@ -135,7 +141,7 @@ namespace RingVideos
 
       }
      
-      private static void SetFilterAndAuthValues(string username, string password, string path, DateTime start, DateTime end, bool starred, bool snapshot, int maxcount, long? deviceId)
+      private static void SetFilterAndAuthValues(string username, string password, string path, DateTime start, DateTime end, bool starred, bool personOnly, string kind, string detectionType, bool snapshot, int maxcount, long? deviceId)
       {
          if (!string.IsNullOrEmpty(username))
          {
@@ -165,6 +171,9 @@ namespace RingVideos
          }
   
          ringApp.Filter.OnlyStarred = starred;
+         ringApp.Filter.OnlyPersonDetected = personOnly;
+         ringApp.Filter.Kind = string.IsNullOrWhiteSpace(kind) ? null : kind;
+         ringApp.Filter.DetectionType = string.IsNullOrWhiteSpace(detectionType) ? null : detectionType;
          ringApp.Filter.Snapshots = snapshot;
      
          if (maxcount != 0)
@@ -188,6 +197,7 @@ namespace RingVideos
      
       public static void QuitApplication()
       {
+         quitRequested = true;
          appLifetime.StopApplication();
       }
       private static bool SetAuthenticationValues()

@@ -60,5 +60,11 @@ namespace KoenZomers.Ring.Api.Entities
 
         [JsonPropertyName("doorbot")]
         public Doorbot Doorbot { get; set; }
+
+        /// <summary>
+        /// Computer vision properties (person detection, detection type, etc.) for this event, when available.
+        /// </summary>
+        [JsonPropertyName("cv_properties")]
+        public CvProperties CvProperties { get; set; }
     }
 }

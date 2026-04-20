@@ -16,7 +16,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.x
+        dotnet-version: 10.x
      
     - name: Restore dependencies
       run: dotnet restore
@@ -29,10 +29,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ringvideos
-        path: "./RingVideos/bin/Release/net8.0/win-x64/publish"
+        path: "./RingVideos/bin/Release/net10.0/win-x64/publish"
 
     - name: Zip Windows files 
-      run: Compress-Archive -Path ./RingVideos/bin/Release/net8.0/win-x64/publish -DestinationPath ./ringvideos.zip
+      run: Compress-Archive -Path ./RingVideos/bin/Release/net10.0/win-x64/publish -DestinationPath ./ringvideos.zip
 
     # Windows ARM    
     - name: Publish for Windows ARM
@@ -42,10 +42,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ringvideos-arm64
-        path: "./RingVideos/bin/Release/net8.0/win-arm64/publish"
+        path: "./RingVideos/bin/Release/net10.0/win-arm64/publish"
 
     - name: Zip Windows files 
-      run: Compress-Archive -Path ./RingVideos/bin/Release/net8.0/win-arm64/publish -DestinationPath ./ringvideos-arm64.zip
+      run: Compress-Archive -Path ./RingVideos/bin/Release/net10.0/win-arm64/publish -DestinationPath ./ringvideos-arm64.zip
         
     #Linux x64    
     - name: Publish for Linux
@@ -55,10 +55,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ringvideos-linux-x64
-        path: "./RingVideos/bin/Release/net8.0/linux-x64/publish"
+        path: "./RingVideos/bin/Release/net10.0/linux-x64/publish"
 
     - name: Zip Linux x64 files 
-      run: Compress-Archive -Path ./RingVideos/bin/Release/net8.0/linux-x64/publish -DestinationPath ./ringvideos-linux-x64.zip
+      run: Compress-Archive -Path ./RingVideos/bin/Release/net10.0/linux-x64/publish -DestinationPath ./ringvideos-linux-x64.zip
 
      #OSX ARM    
     - name: Publish for OSX ARM
@@ -68,10 +68,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ringvideos-osx-arm
-        path: "./RingVideos/bin/Release/net8.0/osx-arm64/publish"
+        path: "./RingVideos/bin/Release/net10.0/osx-arm64/publish"
 
     - name: Zip OSX ARM files 
-      run: Compress-Archive -Path ./RingVideos/bin/Release/net8.0/osx-arm64/publish -DestinationPath ./ringvideos-osx-arm.zip
+      run: Compress-Archive -Path ./RingVideos/bin/Release/net10.0/osx-arm64/publish -DestinationPath ./ringvideos-osx-arm.zip
 
     #OSX x64 
     - name: Publish for OSX x64
@@ -81,10 +81,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ringvideos-osx-x64
-        path: "./RingVideos/bin/Release/net8.0/osx-x64/publish"
+        path: "./RingVideos/bin/Release/net10.0/osx-x64/publish"
 
     - name: Zip OSX x64 files
-      run: Compress-Archive -Path ./RingVideos/bin/Release/net8.0/osx-x64/publish -DestinationPath ./ringvideos-osx-x64.zip
+      run: Compress-Archive -Path ./RingVideos/bin/Release/net10.0/osx-x64/publish -DestinationPath ./ringvideos-osx-x64.zip
 
     #Create release    
     - name: Create GitHub Release

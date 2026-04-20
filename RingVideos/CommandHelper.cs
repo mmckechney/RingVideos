@@ -24,6 +24,9 @@ namespace RingVideos
          var userNameOption = new Option<string>("--username", "-u") { Description = "Ring account username" };
          var maxcountOption = new Option<int>("--maxcount", "-m") { Description = "Maximum number of videos to download", DefaultValueFactory = _ => 1000 };
          var deviceIdOption = new Option<long>("--device-id", "--id") { Description = "Device ID to download videos from. (Use command `devices` to get the available list)" };
+         var personOption = new Option<bool>("--person", "-P") { Description = "Only download videos where a person was detected (shortcut for --detection-type human)" };
+         var kindOption = new Option<string>("--kind", "-k") { Description = "Only download events of this kind. Valid values: motion, ding, on_demand, alarm" };
+         var detectionTypeOption = new Option<string>("--detection-type", "-D") { Description = "Only download events where Ring CV classified the detection as this type. Common values: human, vehicle, animal, package, other_motion" };
          var exitAppOption = new Option<bool>("-x", "--exit") { Description = "Option to close app after running command (vs. keeping open). This could be useful in using in automated scripting." };
 
          RootCommand rootCommand = new RootCommand(description: "Simple command line tool to download videos from your Ring account");
@@ -38,7 +41,10 @@ namespace RingVideos
                parseResult.GetValue(startOption),
                parseResult.GetValue(endOption),
                parseResult.GetValue(maxcountOption),
-               GetNullableLong(parseResult, deviceIdOption));
+               GetNullableLong(parseResult, deviceIdOption),
+               parseResult.GetValue(personOption),
+               parseResult.GetValue(kindOption),
+               parseResult.GetValue(detectionTypeOption));
          });
 
          var allCommand = new Command("all", "Download all videos (starred and unstarred)");
@@ -51,7 +57,10 @@ namespace RingVideos
                parseResult.GetValue(startOption),
                parseResult.GetValue(endOption),
                parseResult.GetValue(maxcountOption),
-               GetNullableLong(parseResult, deviceIdOption));
+               GetNullableLong(parseResult, deviceIdOption),
+               parseResult.GetValue(personOption),
+               parseResult.GetValue(kindOption),
+               parseResult.GetValue(detectionTypeOption));
          });
 
          var snapshotCommand = new Command("snapshot", "Download only snapshot images");
@@ -104,6 +113,9 @@ namespace RingVideos
          starCommand.Add(endOption);
          starCommand.Add(maxcountOption);
          starCommand.Add(deviceIdOption);
+         starCommand.Add(personOption);
+         starCommand.Add(kindOption);
+         starCommand.Add(detectionTypeOption);
          starCommand.Add(exitAppOption);
 
          allCommand.Add(userNameOption);
@@ -113,6 +125,9 @@ namespace RingVideos
          allCommand.Add(endOption);
          allCommand.Add(maxcountOption);
          allCommand.Add(deviceIdOption);
+         allCommand.Add(personOption);
+         allCommand.Add(kindOption);
+         allCommand.Add(detectionTypeOption);
          allCommand.Add(exitAppOption);
 
          snapshotCommand.Add(userNameOption);

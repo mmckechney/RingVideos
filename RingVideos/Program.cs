@@ -1,13 +1,12 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
 using RingVideos.Models;
 using System;
 using System.IO;
 using System.Linq;
 using Serilog;
+using Serilog.Events;
 using RingVideos.Writers;
 
 namespace RingVideos
@@ -19,18 +18,9 @@ namespace RingVideos
       private static IConfigurationRoot Configuration;
       public static void Main(string[] args)
       {
-
-         var level = LogLevel.Information;
-
-         if (args.Any(a => a.ToLower().EndsWith("-d") || a.ToLower().EndsWith("-debug")))
-         {
-            level = LogLevel.Debug;
-         }
-         else if (args.Any(a => a.ToLower().EndsWith("-t") || a.ToLower().EndsWith("-trace")))
-         {
-            level = LogLevel.Trace;
-         }
-
+         // Extract and strip verbosity flags (-d / --debug / -t / --trace) before
+         // they are handed off to System.CommandLine, which doesn't know about them.
+         var (filteredArgs, minimumLevel) = ExtractVerbosityFlags(args);
 
          Configuration = new ConfigurationBuilder()
           .AddJsonFile(configFileName, optional: true, reloadOnChange: true)
@@ -38,15 +28,21 @@ namespace RingVideos
           .Build();
 
          // Configure Serilog
-         Log.Logger = new LoggerConfiguration()
+         var loggerConfig = new LoggerConfiguration()
              .ReadFrom.Configuration(Configuration)
-             .WriteTo.File(logFileBaseName, rollingInterval: RollingInterval.Day)
-             .CreateLogger();
+             .WriteTo.File(logFileBaseName, rollingInterval: RollingInterval.Day);
+
+         if (minimumLevel.HasValue)
+         {
+            loggerConfig = loggerConfig.MinimumLevel.Is(minimumLevel.Value);
+         }
+
+         Log.Logger = loggerConfig.CreateLogger();
 
          try
          {
             Log.Information("Starting up");
-            CreateHostBuilder(args).Build().Run();
+            CreateHostBuilder(filteredArgs).Build().Run();
          }
          catch (Exception ex)
          {
@@ -57,6 +53,28 @@ namespace RingVideos
             Log.CloseAndFlush();
          }
       }
+
+      private static (string[] args, LogEventLevel? level) ExtractVerbosityFlags(string[] args)
+      {
+         LogEventLevel? level = null;
+         var filtered = args.Where(a =>
+         {
+            var lower = a.ToLowerInvariant();
+            if (lower == "-d" || lower == "--debug")
+            {
+               level = LogEventLevel.Debug;
+               return false;
+            }
+            if (lower == "-t" || lower == "--trace")
+            {
+               level = LogEventLevel.Verbose;
+               return false;
+            }
+            return true;
+         }).ToArray();
+         return (filtered, level);
+      }
+
       public static IHostBuilder CreateHostBuilder(string[] args)
       {
 
@@ -85,5 +103,6 @@ namespace RingVideos
       public string[] Args { get; set; } = args;
    }
 }
+
 
 
