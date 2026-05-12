@@ -24,7 +24,7 @@
     <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageReference Include="System.CommandLine" Version="3.0.0-preview.2.26159.112" />
+    <PackageReference Include="System.CommandLine" Version="3.0.0-preview.4.26230.115" />
      <PackageReference Include="Spectre.Console" Version="0.54.0" />
   </ItemGroup>
   <ItemGroup>
